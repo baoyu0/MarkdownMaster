@@ -53,3 +53,18 @@
     color: var(--text-muted);
     margin-bottom: 10px;
 }
+
+.markdown-master-diff {
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    background-color: var(--background-primary);
+    margin-bottom: 20px;
+}
+
+.markdown-master-diff span {
+    display: inline;
+}

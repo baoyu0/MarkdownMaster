@@ -3,6 +3,7 @@ import * as _obsidian from "obsidian";
 declare module "obsidian" {
     export interface App {
         workspace: Workspace;
+        vault: Vault;  // 添加这一行
     }
 
     export interface Workspace {
@@ -11,8 +12,11 @@ declare module "obsidian" {
 
     export class Plugin {
         app: App;
+        loadData(): Promise<any>;
+        saveData(data: any): Promise<void>;
         addRibbonIcon(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement;
         addCommand(command: Command): void;
+        addSettingTab(settingTab: PluginSettingTab): void;
     }
 
     export interface Command {
@@ -20,6 +24,20 @@ declare module "obsidian" {
         name: string;
         callback?: () => void;
         checkCallback?: (checking: boolean) => boolean | void;
+    }
+
+    export abstract class PluginSettingTab extends SettingTab {
+        plugin: Plugin;
+        constructor(app: App, plugin: Plugin);
+    }
+
+    export abstract class SettingTab {
+        app: App;
+        containerEl: HTMLElement;
+
+        constructor(app: App, containerEl: HTMLElement);
+        display(): void;
+        hide(): void;
     }
 
     export class Modal {
@@ -37,6 +55,7 @@ declare module "obsidian" {
         setName(name: string): this;
         setDesc(desc: string): this;
         addButton(cb: (button: ButtonComponent) => any): this;
+        addToggle(cb: (toggle: ToggleComponent) => any): this;
         addTextArea(cb: (text: TextAreaComponent) => any): this;
     }
 
@@ -46,9 +65,15 @@ declare module "obsidian" {
         onClick(callback: () => void): this;
     }
 
+    export interface ToggleComponent {
+        setValue(value: boolean): this;
+        onChange(callback: (value: boolean) => void): this;
+    }
+
     export interface TextAreaComponent {
         setValue(value: string): this;
-        setDisabled(disabled: boolean): this;
+        onChange(callback: (value: string) => void): this;
+        setPlaceholder(placeholder: string): this;  // 添加这一行
     }
 
     export class Notice {
@@ -71,9 +96,24 @@ declare module "obsidian" {
     export interface HTMLElement {
         createEl(tag: string, attr?: { [key: string]: any }): HTMLElement;
         empty(): void;
+        createDiv(options?: { cls?: string }): HTMLElement;
+        createSpan(): HTMLElement;
+        style: CSSStyleDeclaration;  // 添加这一行
+        textContent: string;  // 添加这一行
     }
 
     export type Constructor<T> = new (...args: any[]) => T;
+
+    export interface Vault {
+        getMarkdownFiles(): TFile[];
+        read(file: TFile): Promise<string>;
+        modify(file: TFile, data: string): Promise<void>;
+    }
+
+    export interface TFile {
+        path: string;
+        name: string;
+    }
 }
 
 export * from "obsidian";
