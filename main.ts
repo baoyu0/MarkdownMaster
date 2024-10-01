@@ -103,7 +103,16 @@ export default class MarkdownMasterPlugin extends Plugin {
     formatMarkdown(content: string): string {
         let formatted = content;
 
-        // 应用格式化规则
+        // 1. 把所有"##"转换成"#"
+        formatted = formatted.replace(/^##/gm, '#');
+
+        // 2. 删除所有"**"
+        formatted = formatted.replace(/\*\*/g, '');
+
+        // 3. 删除所有符合正则表达式"\[\d+\]"的内容
+        formatted = formatted.replace(/\[\d+\]/g, '');
+
+        // 保留其他原有的格式化规则
         formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
         formatted = formatted.replace(/^(\s*)-([^\s])/gm, '$1- $2');
         formatted = formatted.replace(/\n{3,}/g, '\n\n');
