@@ -1,40 +1,34 @@
-declare module "obsidian" {
-    export class Plugin {
-        app: App;
-        loadData(): Promise<any>;
-        saveData(data: any): Promise<void>;
-        addRibbonIcon(icon: string, title: string, callback: (evt: MouseEvent) => any): HTMLElement;
-        addCommand(command: Command): void;
-    }
+import * as _obsidian from "obsidian";
 
-    export class App {
+declare module "obsidian" {
+    export interface App {
         workspace: Workspace;
     }
 
-    export class Workspace {
+    export interface Workspace {
         getActiveViewOfType<T extends View>(type: Constructor<T>): T | null;
     }
 
-    export class MarkdownView extends View {
-        editor: Editor;
+    export class Plugin {
+        app: App;
+        addRibbonIcon(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement;
+        addCommand(command: Command): void;
     }
 
-    export class Editor {
-        getValue(): string;
-        setValue(value: string): void;
-    }
-
-    export class Notice {
-        constructor(message: string, timeout?: number);
+    export interface Command {
+        id: string;
+        name: string;
+        callback: () => void;
     }
 
     export class Modal {
+        app: App;
+        contentEl: HTMLElement;
         constructor(app: App);
         open(): void;
         close(): void;
         onOpen(): void;
         onClose(): void;
-        contentEl: HTMLElement;
     }
 
     export class Setting {
@@ -45,22 +39,40 @@ declare module "obsidian" {
         addTextArea(cb: (text: TextAreaComponent) => any): this;
     }
 
-    export interface Command {
-        id: string;
-        name: string;
-        callback: () => any;
-    }
-
-    export class ButtonComponent {
+    export interface ButtonComponent {
         setButtonText(name: string): this;
         setCta(): this;
-        onClick(callback: () => any): this;
+        onClick(callback: () => void): this;
     }
 
-    export class TextAreaComponent {
+    export interface TextAreaComponent {
         setValue(value: string): this;
         setDisabled(disabled: boolean): this;
     }
 
+    export class Notice {
+        constructor(message: string, timeout?: number);
+    }
+
+    export class MarkdownView extends View {
+        editor: Editor;
+    }
+
+    export interface Editor {
+        getValue(): string;
+        setValue(value: string): void;
+    }
+
+    export abstract class View {
+        // Add any necessary View properties here
+    }
+
+    export interface HTMLElement {
+        createEl(tag: string, attr?: { [key: string]: any }): HTMLElement;
+        empty(): void;
+    }
+
     export type Constructor<T> = new (...args: any[]) => T;
 }
+
+export * from "obsidian";

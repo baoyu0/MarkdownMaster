@@ -1,4 +1,4 @@
-import { App, Plugin, MarkdownView, Notice, Modal, Setting } from 'obsidian';
+import { App, Plugin, MarkdownView, Notice, Modal, Setting, View } from 'obsidian';
 
 export default class MarkdownMasterPlugin extends Plugin {
     private lastContent: string = '';
