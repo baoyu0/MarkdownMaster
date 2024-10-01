@@ -1,0 +1,39 @@
+# Obsidian 文件
+.obsidian/
+
+# Node.js 依赖
+node_modules/
+
+# 构建输出
+dist/
+build/
+
+# 日志文件
+*.log
+
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
+
+# 编辑器配置文件
+.vscode/
+.idea/
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 临时文件
+*.tmp
+*.temp
+
+# 个人笔记或配置文件（如果有的话）
+notes.md
+config.personal.json
+
+# npm 包锁文件（如果您不想将其包含在版本控制中）
+# package-lock.json
+
+# Yarn 锁文件（如果您使用 Yarn 而不是 npm）
+# yarn.lock

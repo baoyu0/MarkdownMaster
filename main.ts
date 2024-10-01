@@ -1,4 +1,4 @@
-import { Plugin, MarkdownView, Notice, Modal, Setting } from 'obsidian';
+import { App, Plugin, MarkdownView, Notice, Modal, Setting } from 'obsidian';
 
 export default class MarkdownMasterPlugin extends Plugin {
     private lastContent: string = '';
@@ -22,7 +22,6 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.undoFormat(),
         });
 
-        // 添加新的测试命令
         this.addCommand({
             id: 'test-format',
             name: '测试Markdown格式化',
@@ -87,15 +86,17 @@ export default class MarkdownMasterPlugin extends Plugin {
     formatMarkdown(content: string): string {
         let formatted = content;
 
-        // 原有的格式化规则
+        // 恢复原有的格式化规则
         formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
         formatted = formatted.replace(/^(\s*)-([^\s])/gm, '$1- $2');
         formatted = formatted.replace(/\n{3,}/g, '\n\n');
-
-        // 新增的格式化规则
         formatted = formatted.replace(/^##/gm, '#');
         formatted = formatted.replace(/\*\*/g, '');
         formatted = formatted.replace(/\[\d+\]/g, '');
+
+        // 保留新添加的规则
+        formatted = formatted.replace(/^(\d+)\.([^\s])/gm, '$1. $2'); // 修复有序列表格式
+        formatted = formatted.trim(); // 移除开头和结尾的空白字符
 
         return formatted;
     }
