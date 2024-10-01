@@ -98,7 +98,10 @@ export default class MarkdownMasterPlugin extends Plugin {
 [1] https://example.com
 [2] https://another-example.com
 普通文本中的链接 https://normal-link.com 不应被删除。
-        `;
+
+1. https://numbered-link.com
+https://link-without-number.com
+`;
 
         const formattedContent = this.formatMarkdown(testContent);
         new TestFormatModal(this.app, testContent, formattedContent).open();
@@ -107,17 +110,17 @@ export default class MarkdownMasterPlugin extends Plugin {
     formatMarkdown(content: string): string {
         let formatted = content;
 
-        // 1. 把所有"##"转换成"#"
+        // 1. 删除符合特定格式的链接
+        formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
+
+        // 2. 把所有"##"转换成"#"
         formatted = formatted.replace(/^##/gm, '#');
 
-        // 2. 删除所有"**"
+        // 3. 删除所有"**"
         formatted = formatted.replace(/\*\*/g, '');
 
-        // 3. 删除所有符合正则表达式"\[\d+\]"的内容
+        // 4. 删除所有符合正则表达式"\[\d+\]"的内容
         formatted = formatted.replace(/\[\d+\]/g, '');
-
-        // 4. 新增：删除符合特定格式的链接
-        formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
 
         // 保留其他原有的格式化规则
         formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
