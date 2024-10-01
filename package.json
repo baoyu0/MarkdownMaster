@@ -10,7 +10,7 @@
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "start": "npm run dev",
-    "watch": "node esbuild.config.mjs watch"
+    "watch": "node esbuild.config.mjs"
   },
   "keywords": ["obsidian", "plugin", "markdown", "formatter"],
   "author": "您的名字",
@@ -24,7 +24,10 @@
     "eslint": "^8.18.0",
     "jest": "^28.1.1",
     "ts-jest": "^28.0.5",
-    "esbuild": "0.17.3"
+    "esbuild": "0.17.3",
+    "builtin-modules": "^3.2.0",
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0"
   },
   "dependencies": {
     "tslib": "^2.4.0"
