@@ -5,9 +5,7 @@
 node_modules/
 
 # 构建输出
-main.js
-dist/
-build/
+build/*
 !build/main.js
 
 # 日志文件

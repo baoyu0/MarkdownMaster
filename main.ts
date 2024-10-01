@@ -1,4 +1,3 @@
-import 'tslib';
 import { App, Plugin, MarkdownView, Notice, Modal, Setting } from 'obsidian';
 
 export default class MarkdownMasterPlugin extends Plugin {
