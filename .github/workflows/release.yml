@@ -20,6 +20,10 @@ jobs:
         run: npm ci
       - name: Build plugin
         run: npm run build
+      - name: Check build output
+        run: |
+          ls -la
+          ls -la build
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,7 +32,7 @@ jobs:
             --draft \
             --title "Release ${{ github.ref_name }}" \
             --generate-notes \
-            build/main.js manifest.json styles.css
+            build/main.js build/manifest.json build/styles.css
       - name: Publish release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
