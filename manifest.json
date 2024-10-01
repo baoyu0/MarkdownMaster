@@ -1,10 +1,10 @@
 {
     "id": "markdown-master",
     "name": "Markdown Master",
-    "version": "1.0.9",
+    "version": "1.0.20",
     "minAppVersion": "0.15.0",
     "description": "一键格式化Markdown文件，提供预览和撤销功能",
-    "author": "您的名字",
-    "authorUrl": "https://github.com/您的GitHub用户名",
+    "author": "dandan",
+    "authorUrl": "https://github.com/baoyu0",
     "isDesktopOnly": false
 }

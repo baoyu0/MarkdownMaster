@@ -38,12 +38,6 @@ export default class MarkdownMasterPlugin extends Plugin {
                 return false;
             }
         });
-
-        this.addCommand({
-            id: 'test-format',
-            name: '测试Markdown格式化',
-            callback: () => this.testFormat(),
-        });
     }
 
     onunload() {
@@ -78,33 +72,6 @@ export default class MarkdownMasterPlugin extends Plugin {
         } else {
             new Notice('没有可撤销的格式化操作');
         }
-    }
-
-    testFormat() {
-        const testContent = `
-## 这是一个二级标题
-这是一些普通文本，包含**粗体**和*斜体*。
-
-- 这是一个列表项
--这是一个没有空格的列表项
-
-这是一个引用[1]，还有另一个引用[2]。
-
-1. 这是一个有序列表
-2.这是一个没有空格的有序列表项
-
-### 这是一个三级标题
-
-[1] https://example.com
-[2] https://another-example.com
-普通文本中的链接 https://normal-link.com 不应被删除。
-
-1. https://numbered-link.com
-https://link-without-number.com
-`;
-
-        const formattedContent = this.formatMarkdown(testContent);
-        new TestFormatModal(this.app, testContent, formattedContent).open();
     }
 
     formatMarkdown(content: string): string {
@@ -185,47 +152,5 @@ class FormatPreviewModal extends Modal {
         const {contentEl} = this;
         contentEl.empty();
         this.onSubmit(this.result);
-    }
-}
-
-class TestFormatModal extends Modal {
-    private originalContent: string;
-    private formattedContent: string;
-
-    constructor(app: App, originalContent: string, formattedContent: string) {
-        super(app);
-        this.originalContent = originalContent;
-        this.formattedContent = formattedContent;
-    }
-
-    onOpen() {
-        const {contentEl} = this;
-
-        contentEl.createEl('h2', {text: '格式化测试结果'});
-
-        new Setting(contentEl)
-            .setName('原始内容')
-            .setDesc('格式化前的内容')
-            .addTextArea(text => text
-                .setValue(this.originalContent)
-                .setDisabled(true));
-
-        new Setting(contentEl)
-            .setName('格式化后内容')
-            .setDesc('格式化后的内容')
-            .addTextArea(text => text
-                .setValue(this.formattedContent)
-                .setDisabled(true));
-
-        new Setting(contentEl)
-            .addButton(btn => btn
-                .setButtonText('关闭')
-                .setCta()
-                .onClick(() => this.close()));
-    }
-
-    onClose() {
-        const {contentEl} = this;
-        contentEl.empty();
     }
 }

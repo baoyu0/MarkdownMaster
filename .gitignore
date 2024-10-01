@@ -5,8 +5,7 @@
 node_modules/
 
 # 构建输出
-build/*
-!build/main.js
+build/
 
 # 日志文件
 *.log
@@ -19,11 +18,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# 环境变量文件
-.env
-.env.local
-.env.*.local
-
 # 临时文件
 *.tmp
 *.temp
@@ -32,17 +26,11 @@ Thumbs.db
 notes.md
 config.personal.json
 
-# npm 包锁文件（如果您不想将其包含在版本控制中）
-# package-lock.json
-
-# Yarn 锁文件（如果您使用 Yarn 而不是 npm）
-# yarn.lock
-
-# 添加以下内容
+# 构建产物
 main.js
 *.js.map
 data.json
 
-# 添加以下行
+# 发布文件
 /markdown-master/
 markdown-master.zip
