@@ -20,19 +20,18 @@ jobs:
         run: npm ci
       - name: Build plugin
         run: npm run build
-      - name: Check build output
-        run: |
-          ls -la
-          ls -la build
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cd markdown-master
+          zip -r ../markdown-master.zip .
+          cd ..
           gh release create ${{ github.ref_name }} \
             --draft \
             --title "Release ${{ github.ref_name }}" \
             --generate-notes \
-            build/main.js build/manifest.json build/styles.css
+            markdown-master.zip
       - name: Publish release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

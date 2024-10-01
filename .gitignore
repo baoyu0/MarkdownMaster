@@ -42,3 +42,7 @@ config.personal.json
 main.js
 *.js.map
 data.json
+
+# 添加以下行
+/markdown-master/
+markdown-master.zip
