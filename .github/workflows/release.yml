@@ -28,11 +28,13 @@ jobs:
           gh release create "$TAG" \
             --draft \
             --title "Release $TAG" \
-            --generate-notes \
-            main.js manifest.json styles.css
+            --generate-notes
       - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
-            main.js manifest.json styles.css
+          assets=("main.js" "manifest.json" "styles.css")
+          for asset in "${assets[@]}"; do
+            gh release delete-asset "${{ github.ref_name }}" "$asset" --yes || true
+            gh release upload "${{ github.ref_name }}" "$asset"
+          done
