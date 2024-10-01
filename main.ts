@@ -1,4 +1,4 @@
-import { App, Plugin, MarkdownView, Notice, Modal, Setting, View } from 'obsidian';
+import { App, Plugin, MarkdownView, Notice, Modal, Setting } from 'obsidian';
 
 export default class MarkdownMasterPlugin extends Plugin {
     private lastContent: string = '';
@@ -13,13 +13,30 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.addCommand({
             id: 'format-markdown',
             name: '格式化当前Markdown文件',
-            callback: () => this.showFormatOptions(),
+            checkCallback: (checking: boolean) => {
+                const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (markdownView) {
+                    if (!checking) {
+                        this.showFormatOptions();
+                    }
+                    return true;
+                }
+                return false;
+            }
         });
 
         this.addCommand({
             id: 'undo-format',
             name: '撤销上次格式化',
-            callback: () => this.undoFormat(),
+            checkCallback: (checking: boolean) => {
+                if (this.lastContent) {
+                    if (!checking) {
+                        this.undoFormat();
+                    }
+                    return true;
+                }
+                return false;
+            }
         });
 
         this.addCommand({
@@ -86,17 +103,12 @@ export default class MarkdownMasterPlugin extends Plugin {
     formatMarkdown(content: string): string {
         let formatted = content;
 
-        // 恢复原有的格式化规则
+        // 应用格式化规则
         formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
         formatted = formatted.replace(/^(\s*)-([^\s])/gm, '$1- $2');
         formatted = formatted.replace(/\n{3,}/g, '\n\n');
-        formatted = formatted.replace(/^##/gm, '#');
-        formatted = formatted.replace(/\*\*/g, '');
-        formatted = formatted.replace(/\[\d+\]/g, '');
-
-        // 保留新添加的规则
-        formatted = formatted.replace(/^(\d+)\.([^\s])/gm, '$1. $2'); // 修复有序列表格式
-        formatted = formatted.trim(); // 移除开头和结尾的空白字符
+        formatted = formatted.replace(/^(\d+)\.([^\s])/gm, '$1. $2');
+        formatted = formatted.trim();
 
         return formatted;
     }

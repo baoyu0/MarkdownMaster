@@ -18,7 +18,8 @@ declare module "obsidian" {
     export interface Command {
         id: string;
         name: string;
-        callback: () => void;
+        callback?: () => void;
+        checkCallback?: (checking: boolean) => boolean | void;
     }
 
     export class Modal {

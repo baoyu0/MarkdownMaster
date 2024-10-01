@@ -38,3 +38,8 @@ config.personal.json
 
 # Yarn 锁文件（如果您使用 Yarn 而不是 npm）
 # yarn.lock
+
+# 添加以下内容
+main.js
+*.js.map
+data.json

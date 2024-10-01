@@ -1,21 +1,6 @@
 /* 在这里添加任何自定义样式 */
-.markdown-master-button {
-    background-color: #4CAF50; /* 绿色背景 */
-    color: white;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.markdown-master-button:hover {
-    background-color: #45a049; /* 鼠标悬停时的深绿色 */
-}
-
 .markdown-master-modal {
     max-width: 600px;
-    width: 100%;
 }
 
 .markdown-master-textarea {
@@ -24,7 +9,4 @@
     font-family: 'Microsoft YaHei', 'SimSun', monospace;
     font-size: 14px;
     line-height: 1.5;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
 }
