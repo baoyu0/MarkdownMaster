@@ -94,6 +94,10 @@ export default class MarkdownMasterPlugin extends Plugin {
 2.这是一个没有空格的有序列表项
 
 ### 这是一个三级标题
+
+[1] https://example.com
+[2] https://another-example.com
+普通文本中的链接 https://normal-link.com 不应被删除。
         `;
 
         const formattedContent = this.formatMarkdown(testContent);
@@ -111,6 +115,9 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         // 3. 删除所有符合正则表达式"\[\d+\]"的内容
         formatted = formatted.replace(/\[\d+\]/g, '');
+
+        // 4. 新增：删除符合特定格式的链接
+        formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
 
         // 保留其他原有的格式化规则
         formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
