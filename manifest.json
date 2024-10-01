@@ -1,0 +1,10 @@
+{
+    "id": "markdown-master",
+    "name": "Markdown Master",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "一键格式化Markdown文件",
+    "author": "您的名字",
+    "authorUrl": "https://github.com/您的GitHub用户名",
+    "isDesktopOnly": false
+}
