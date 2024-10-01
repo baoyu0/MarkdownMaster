@@ -24,9 +24,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd markdown-master
-          zip -r ../markdown-master.zip .
-          cd ..
+          mkdir markdown-master
+          cp main.js manifest.json styles.css markdown-master/
+          zip -r markdown-master.zip markdown-master
           gh release create ${{ github.ref_name }} \
             --draft \
             --title "Release ${{ github.ref_name }}" \
