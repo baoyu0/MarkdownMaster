@@ -20,39 +20,12 @@ jobs:
         run: npm ci
       - name: Build plugin
         run: npm run build
-      - name: Create manifest.json
-        run: |
-          echo '{
-            "id": "markdown-master",
-            "name": "Markdown Master",
-            "version": "${{ github.ref_name }}",
-            "minAppVersion": "0.15.0",
-            "description": "一键格式化Markdown文件，提供预览和撤销功能",
-            "author": "您的名字",
-            "authorUrl": "https://github.com/您的GitHub用户名",
-            "isDesktopOnly": false
-          }' > manifest.json
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" \
+          gh release create ${{ github.ref }} \
             --draft \
-            --title "Release $TAG" \
-            --generate-notes
-      - name: Upload release assets
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          assets=("main.js" "manifest.json" "styles.css")
-          for asset in "${assets[@]}"; do
-            gh release delete-asset "${{ github.ref_name }}" "$asset" --yes || true
-            gh release upload "${{ github.ref_name }}" "$asset"
-          done
-      - name: Check for manifest.json
-        run: |
-          if [ ! -f manifest.json ]; then
-            echo "manifest.json does not exist"
-            exit 1
-          fi
+            --title "Release ${{ github.ref_name }}" \
+            --generate-notes \
+            build/main.js manifest.json styles.css

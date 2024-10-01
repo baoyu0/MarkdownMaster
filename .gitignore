@@ -8,6 +8,7 @@ node_modules/
 main.js
 dist/
 build/
+!build/main.js
 
 # 日志文件
 *.log
