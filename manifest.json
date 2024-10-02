@@ -1,7 +1,7 @@
 {
   "id": "markdown-master",
   "name": "Markdown Master",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "minAppVersion": "0.15.0",
   "description": "一键格式化Markdown文件，提供预览、撤销、批量处理、自定义规则、表格格式化、代码高亮、图片优化、文本统计和标题编号优化功能",
   "author": "dandan",
@@ -13,7 +13,10 @@
       "name": "格式化当前Markdown文件",
       "hotkeys": [
         {
-          "modifiers": ["Mod", "Shift"],
+          "modifiers": [
+            "Mod",
+            "Shift"
+          ],
           "key": "F"
         }
       ]
