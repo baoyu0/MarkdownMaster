@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import { existsSync } from 'fs';  // 添加这一行
+import { existsSync } from 'fs';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import path from 'path';
