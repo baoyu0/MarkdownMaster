@@ -1,15 +1,11 @@
-name: Create Release
-
 on:
   push:
     tags:
-      - 'v*' # 这将匹配所有以 v 开头的 tag，如 v1.0.0
+      - 'v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
     - uses: actions/checkout@v3
     - name: Use Node.js
@@ -19,6 +15,7 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run build
+    - run: npm run package
 
     - name: Create Release
       env:
@@ -28,12 +25,11 @@ jobs:
           --generate-notes \
           --draft
 
-    - name: Rename and Upload main.js to release
+    - name: Upload Release Asset
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        mv main.js markdown-master-${{ github.ref_name }}.js
-        gh release upload ${{ github.ref_name }} markdown-master-${{ github.ref_name }}.js --clobber
+        gh release upload ${{ github.ref_name }} ./release/markdown-master-${{ github.ref_name }}.zip --clobber
 
     - name: Publish Release
       env:
