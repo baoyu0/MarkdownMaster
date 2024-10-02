@@ -26,10 +26,17 @@ jobs:
       run: |
         gh release create ${{ github.ref_name }} \
           --generate-notes \
-          ./main.js
+          --draft
 
-    - name: Upload main.js to release
+    - name: Rename and Upload main.js to release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release upload ${{ github.ref_name }} main.js
+        mv main.js markdown-master-${{ github.ref_name }}.js
+        gh release upload ${{ github.ref_name }} markdown-master-${{ github.ref_name }}.js --clobber
+
+    - name: Publish Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release edit ${{ github.ref_name }} --draft=false
