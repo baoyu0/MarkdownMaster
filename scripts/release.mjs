@@ -47,7 +47,7 @@ async function release(version) {
         console.log(`Verified: ${zipFilename} has been created successfully.`);
 
         // 执行Git操作
-        gitOperations(version);
+        await gitOperations(version);
 
         console.log(`Version ${version} has been released successfully!`);
     } catch (error) {
@@ -73,10 +73,33 @@ async function updateVersions(version) {
 
 function gitOperations(version) {
     console.log('Performing Git operations...');
+
+    // 检查标签是否已存在
+    let tagExists = false;
+    try {
+        execSync(`git rev-parse v${version}`, { stdio: 'ignore' });
+        tagExists = true;
+    } catch (error) {
+        tagExists = false;
+    }
+
+    if (tagExists) {
+        console.warn(`标签 v${version} 已存在，跳过创建标签。`);
+    } else {
+        execSync(`git tag v${version}`, { stdio: 'inherit' });
+    }
+
+    // 提交更改
     execSync('git add .', { stdio: 'inherit' });
     execSync(`git commit -m "Release v${version}"`, { stdio: 'inherit' });
-    execSync(`git tag v${version}`, { stdio: 'inherit' });
-    execSync('git push && git push --tags', { stdio: 'inherit' });
+
+    // 推送更改和标签
+    if (!tagExists) {
+        execSync('git push && git push --tags', { stdio: 'inherit' });
+    } else {
+        execSync('git push', { stdio: 'inherit' });
+    }
+
     console.log('Git operations completed.');
 }
 
