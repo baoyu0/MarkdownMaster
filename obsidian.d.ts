@@ -8,6 +8,7 @@ declare module "obsidian" {
 
     export interface Workspace {
         getActiveViewOfType<T extends View>(type: Constructor<T>): T | null;
+        on(name: 'file-open', callback: (file: TFile) => any, ctx?: any): EventRef;
     }
 
     export class Plugin {
@@ -17,6 +18,7 @@ declare module "obsidian" {
         addRibbonIcon(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement;
         addCommand(command: Command): void;
         addSettingTab(settingTab: PluginSettingTab): void;
+        registerEvent(ref: EventRef): EventRef;
     }
 
     export interface Command {
@@ -113,7 +115,10 @@ declare module "obsidian" {
     export interface TFile {
         path: string;
         name: string;
+        extension: string;
     }
+
+    export type EventRef = any;
 }
 
 export * from "obsidian";

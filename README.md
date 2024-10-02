@@ -12,6 +12,12 @@ Markdown Master 是一个为 Obsidian 设计的插件，提供一键式 Markdown
 - 格式化历史记录
 - 自定义正则表达式规则
 - 快捷键支持
+- 自动格式化（可选）
+- 表格格式化
+- 代码块高亮优化
+- 图片链接优化
+- 文本统计
+- 标题编号优化
 
 ## 格式化规则
 
@@ -23,6 +29,7 @@ Markdown Master 是一个为 Obsidian 设计的插件，提供一键式 Markdown
 - 删除多余的空行
 - 修复有序列表格式
 - 应用自定义正则表达式规则
+- 优化标题编号（删除多余的数字编号）
 
 ## 使用方法
 
@@ -31,6 +38,7 @@ Markdown Master 是一个为 Obsidian 设计的插件，提供一键式 Markdown
    - "Markdown Master: 撤销上次格式化"（快捷键：Ctrl/Cmd + Shift + Z）
    - "Markdown Master: 批量格式化所有Markdown文件"
    - "Markdown Master: 显示格式化历史记录"
+   - "Markdown Master: 显示文本统计"
 
 2. 点击功能区中的铅笔图标来打开格式化选项。
 

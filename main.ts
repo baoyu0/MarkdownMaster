@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef } from 'obsidian';
 import { diffChars, Change } from 'diff';
 
 interface MarkdownMasterSettings {
@@ -7,6 +7,12 @@ interface MarkdownMasterSettings {
     enableBoldRemoval: boolean;
     enableReferenceRemoval: boolean;
     customRegexRules: { pattern: string; replacement: string }[];
+    enableAutoFormat: boolean;
+    enableTableFormat: boolean;
+    enableCodeHighlight: boolean;
+    enableImageOptimization: boolean;
+    enableTextStatistics: boolean;
+    enableTitleNumbering: boolean;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -14,16 +20,24 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     enableHeadingConversion: true,
     enableBoldRemoval: true,
     enableReferenceRemoval: true,
-    customRegexRules: []
+    customRegexRules: [],
+    enableAutoFormat: false,
+    enableTableFormat: true,
+    enableCodeHighlight: true,
+    enableImageOptimization: true,
+    enableTextStatistics: false,
+    enableTitleNumbering: true,
 }
 
 export default class MarkdownMasterPlugin extends Plugin {
-    settings: MarkdownMasterSettings;
+    settings!: MarkdownMasterSettings;
     private lastContent: string = "";
-    private formatHistory: FormatHistory;
+    private formatHistory!: FormatHistory;
+    private fileOpenRef: EventRef;
 
     async onload() {
         await this.loadSettings();
+        this.formatHistory = new FormatHistory();
         this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
         this.addRibbonIcon("pencil", "Markdown Master", (evt) => {
@@ -54,7 +68,27 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.showFormatHistory()
         });
 
-        this.formatHistory = new FormatHistory();
+        // 修改自动格式化功能的事件注册
+        if (this.settings.enableAutoFormat) {
+            this.fileOpenRef = this.registerEvent(
+                this.app.workspace.on('file-open', (file: TFile) => {
+                    if (file && file.extension === 'md') {
+                        this.autoFormatFile(file);
+                    }
+                })
+            );
+        }
+
+        // 添加文本统计命令
+        this.addCommand({
+            id: 'show-text-statistics',
+            name: '显示文本统计',
+            callback: () => this.showTextStatistics()
+        });
+    }
+
+    onunload() {
+        // 不需要手动取消事件监听，Plugin 类会自动处理
     }
 
     async loadSettings() {
@@ -90,6 +124,23 @@ export default class MarkdownMasterPlugin extends Plugin {
             const regex = new RegExp(rule.pattern, 'g');
             formatted = formatted.replace(regex, rule.replacement);
         });
+
+        if (this.settings.enableTableFormat) {
+            formatted = this.formatTables(formatted);
+        }
+
+        if (this.settings.enableCodeHighlight) {
+            formatted = this.highlightCodeBlocks(formatted);
+        }
+
+        if (this.settings.enableImageOptimization) {
+            formatted = this.optimizeImageLinks(formatted);
+        }
+
+        if (this.settings.enableTitleNumbering) {
+            // 修改这个正则表达式以匹配所有级别的标题
+            formatted = formatted.replace(/^(#{1,6}\s+(?:\d+\.)*\d+(?:\s*-\s*)?)\s*(?:\d+\.)*\s*(.+)$/gm, '$1 $2');
+        }
 
         return formatted.trim();
     }
@@ -143,6 +194,74 @@ export default class MarkdownMasterPlugin extends Plugin {
                 activeView.editor.setValue(selectedContent);
             }
         }).open();
+    }
+
+    // 修改表格格式化函数，使用 String.prototype.padEnd 的替代方法
+    formatTables(content: string): string {
+        const tableRegex = /\|(.+)\|/g;
+        return content.replace(tableRegex, (match) => {
+            const cells = match.split('|').map(cell => cell.trim());
+            const maxLength = Math.max(...cells.map(cell => cell.length));
+            return cells.map(cell => `| ${this.padEndPolyfill(cell, maxLength)} `).join('') + '|';
+        });
+    }
+
+    // 添加 padEnd 的替代方法
+    padEndPolyfill(str: string, targetLength: number, padString: string = ' '): string {
+        targetLength = targetLength >> 0;
+        if (str.length > targetLength) {
+            return String(str);
+        } else {
+            targetLength = targetLength - str.length;
+            if (targetLength > padString.length) {
+                padString += padString.repeat(targetLength / padString.length);
+            }
+            return String(str) + padString.slice(0, targetLength);
+        }
+    }
+
+    // 新增的代码块高亮函数
+    highlightCodeBlocks(content: string): string {
+        const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+        return content.replace(codeBlockRegex, (match, lang, code) => {
+            return `\`\`\`${lang || ''}\n${code.trim()}\n\`\`\``;
+        });
+    }
+
+    // 新增的图片链接优化函数
+    optimizeImageLinks(content: string): string {
+        const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
+        return content.replace(imageRegex, (match, alt, url) => {
+            const optimizedUrl = url.replace(/^http:/, 'https:');
+            return `![${alt}](${optimizedUrl})`;
+        });
+    }
+
+    // 新增的自动格式化函数
+    async autoFormatFile(file: TFile) {
+        if (file.extension !== 'md') return;
+        const content = await this.app.vault.read(file);
+        const formattedContent = this.formatMarkdown(content);
+        if (content !== formattedContent) {
+            await this.app.vault.modify(file, formattedContent);
+            new Notice(`已自动格式化文件: ${file.name}`);
+        }
+    }
+
+    // 新增的文本统计函数
+    showTextStatistics() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) {
+            new Notice('请打开一个Markdown文件');
+            return;
+        }
+
+        const content = activeView.editor.getValue();
+        const wordCount = content.split(/\s+/).length;
+        const charCount = content.length;
+        const lineCount = content.split('\n').length;
+
+        new TextStatisticsModal(this.app, wordCount, charCount, lineCount).open();
     }
 }
 
@@ -254,6 +373,35 @@ class FormatHistoryModal extends Modal {
     }
 }
 
+// 新增的文本统计模态框
+class TextStatisticsModal extends Modal {
+    private wordCount: number;
+    private charCount: number;
+    private lineCount: number;
+
+    constructor(app: App, wordCount: number, charCount: number, lineCount: number) {
+        super(app);
+        this.wordCount = wordCount;
+        this.charCount = charCount;
+        this.lineCount = lineCount;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl('h2', { text: '文本统计' });
+
+        contentEl.createEl('p', { text: `单词数：${this.wordCount}` });
+        contentEl.createEl('p', { text: `字符数：${this.charCount}` });
+        contentEl.createEl('p', { text: `行数：${this.lineCount}` });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
 class MarkdownMasterSettingTab extends PluginSettingTab {
     plugin: MarkdownMasterPlugin;
 
@@ -320,6 +468,66 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                             return { pattern, replacement };
                         })
                         .filter(rule => rule.pattern && rule.replacement);
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用自动格式化')
+            .setDesc('打开文件时自动格式化')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableAutoFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableAutoFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用表格格式化')
+            .setDesc('自动对齐表格列')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableTableFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableTableFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用代码块高亮')
+            .setDesc('优化代码块格式')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableCodeHighlight)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableCodeHighlight = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用图片链接优化')
+            .setDesc('将 HTTP 图片链接转换为 HTTPS')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableImageOptimization)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableImageOptimization = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用文本统计')
+            .setDesc('在状态栏显示文本统计信息')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableTextStatistics)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableTextStatistics = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('优化标题编号')
+            .setDesc('保留标准的Markdown标题序号，删除额外的数字编号')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableTitleNumbering)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableTitleNumbering = value;
                     await this.plugin.saveSettings();
                 }));
     }
