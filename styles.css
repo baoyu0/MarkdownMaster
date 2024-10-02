@@ -161,3 +161,52 @@
 .theme-dark .markdown-master-diff span[style*="color: grey"] {
     color: #b9bbbe !important;
 }
+
+/* 提高对比度 */
+.markdown-master-modal {
+    color: #000;
+    background-color: #fff;
+}
+
+.theme-dark .markdown-master-modal {
+    color: #fff;
+    background-color: #2f3136;
+}
+
+/* 增加焦点指示器 */
+.markdown-master-button:focus,
+.markdown-master-input:focus,
+.markdown-master-select:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* 增加交互元素的大小 */
+.markdown-master-button,
+.markdown-master-input,
+.markdown-master-select {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* 添加 ARIA 标签 */
+.markdown-master-button[aria-label]:not([aria-label=""]),
+.markdown-master-input[aria-label]:not([aria-label=""]),
+.markdown-master-select[aria-label]:not([aria-label=""]) {
+    position: relative;
+}
+
+.markdown-master-button[aria-label]:not([aria-label=""]):hover::after,
+.markdown-master-input[aria-label]:not([aria-label=""]):hover::after,
+.markdown-master-select[aria-label]:not([aria-label=""]):hover::after {
+    content: attr(aria-label);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+}

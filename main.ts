@@ -36,6 +36,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     private lastContent: string = "";
     private formatHistory!: FormatHistory;
     private fileOpenRef: EventRef;
+    private undoStack: string[] = [];
+    private redoStack: string[] = [];
 
     async onload() {
         await this.loadSettings();
@@ -106,7 +108,16 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const data = await this.loadData();
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+
+        try {
+            const settingsFile = await this.app.vault.adapter.read('.obsidian/plugins/markdown-master/settings.json');
+            const customSettings = JSON.parse(settingsFile);
+            this.settings = Object.assign({}, this.settings, customSettings);
+        } catch (error) {
+            console.log('No custom settings file found. Using default settings.');
+        }
     }
 
     async saveSettings() {
@@ -192,11 +203,20 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     async batchFormat() {
         const files = this.app.vault.getMarkdownFiles();
-        for (const file of files) {
+        const progressModal = new ProgressModal(this.app);
+        progressModal.open();
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
             const content = await this.app.vault.read(file);
             const formattedContent = this.formatMarkdown(content);
             await this.app.vault.modify(file, formattedContent);
+            
+            const progress = Math.round((i + 1) / files.length * 100);
+            progressModal.setProgress(progress, `处理文件 ${i + 1}/${files.length}: ${file.name}`);
         }
+
+        progressModal.close();
         new Notice('批量格式化完成');
     }
 
@@ -294,6 +314,52 @@ export default class MarkdownMasterPlugin extends Plugin {
             document.body.classList.add('theme-light');
             document.body.classList.remove('theme-dark');
         }
+    }
+
+    async formatCurrentFile() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) {
+            new Notice('请打开一个Markdown文件');
+            return;
+        }
+
+        const content = activeView.editor.getValue();
+        this.undoStack.push(content);
+        this.redoStack = []; // 清空重做栈
+
+        const formattedContent = this.formatMarkdown(content);
+        activeView.editor.setValue(formattedContent);
+        new Notice('Markdown文件已格式化');
+    }
+
+    undo() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || this.undoStack.length === 0) {
+            new Notice('无法撤销');
+            return;
+        }
+
+        const currentContent = activeView.editor.getValue();
+        this.redoStack.push(currentContent);
+
+        const previousContent = this.undoStack.pop()!;
+        activeView.editor.setValue(previousContent);
+        new Notice('已撤销上一次操作');
+    }
+
+    redo() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || this.redoStack.length === 0) {
+            new Notice('无法重做');
+            return;
+        }
+
+        const currentContent = activeView.editor.getValue();
+        this.undoStack.push(currentContent);
+
+        const nextContent = this.redoStack.pop()!;
+        activeView.editor.setValue(nextContent);
+        new Notice('已重做操作');
     }
 }
 
@@ -448,10 +514,11 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         containerEl.createEl('h2', { text: 'Markdown Master 设置' });
 
         new Setting(containerEl)
-            .setName('删除特定链接')
-            .setDesc('删除格式为 [数字] http://... 的链接')
+            .setName('启用链接移除')
+            .setDesc('删除特定格式的链接')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableLinkRemoval)
+                .setAttr('aria-label', '启用或禁用链接移除')
                 .onChange(async (value) => {
                     this.plugin.settings.enableLinkRemoval = value;
                     await this.plugin.saveSettings();
@@ -573,5 +640,27 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.applyTheme();
                 }));
+    }
+}
+
+class ProgressModal extends Modal {
+    private progressBar: HTMLProgressElement;
+    private statusText: HTMLParagraphElement;
+
+    constructor(app: App) {
+        super(app);
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl('h2', { text: '正在处理...' });
+        this.progressBar = contentEl.createEl('progress', { attr: { max: '100', value: '0' } });
+        this.statusText = contentEl.createEl('p', { text: '准备中...' });
+    }
+
+    setProgress(value: number, status: string) {
+        this.progressBar.value = value;
+        this.statusText.textContent = status;
     }
 }

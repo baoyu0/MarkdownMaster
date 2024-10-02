@@ -1,0 +1,20 @@
+{
+  "formatRules": {
+    "enableLinkRemoval": true,
+    "enableHeadingConversion": true,
+    "enableBoldRemoval": true,
+    "enableReferenceRemoval": true,
+    "enableTableFormat": true,
+    "enableCodeHighlight": true,
+    "enableImageOptimization": true,
+    "enableTitleNumbering": true
+  },
+  "customRegexRules": [
+    {
+      "pattern": "\\b(TODO|FIXME)\\b",
+      "replacement": "**$1**"
+    }
+  ],
+  "autoFormatOnSave": false,
+  "darkMode": false
+}
