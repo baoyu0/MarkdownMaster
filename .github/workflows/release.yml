@@ -20,6 +20,11 @@ jobs:
     - name: List files in release directory
       run: ls -R release
     
+    - name: List release directory contents
+      run: |
+        ls -la ./release
+        echo "Current working directory: $(pwd)"
+    
     - name: Create Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,7 +37,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release upload ${{ github.ref_name }} ./release/markdown-master-v${{ github.ref_name }}.zip --clobber
+        zip_file=$(ls ./release/markdown-master-*.zip | head -n 1)
+        if [ -f "$zip_file" ]; then
+          gh release upload ${{ github.ref_name }} "$zip_file" --clobber
+        else
+          echo "ZIP file not found in release directory"
+          exit 1
+        fi
     
     - name: Publish Release
       env:
