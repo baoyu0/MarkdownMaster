@@ -19,7 +19,7 @@ zip.addLocalFile('manifest.json');
 zip.addLocalFile('styles.css');
 
 // 写入 zip 文件
-const zipFilename = `markdown-master-${version}.zip`;
+const zipFilename = `markdown-master-v${version}.zip`;
 zip.writeZip(`${targetDir}/${zipFilename}`);
 
 console.log(`Plugin packaged: ${zipFilename}`);

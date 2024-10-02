@@ -16,9 +16,10 @@ jobs:
     - run: npm ci
     - run: npm run build
     - run: npm run package
+    
     - name: List files in release directory
       run: ls -R release
-
+    
     - name: Create Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -26,13 +27,13 @@ jobs:
         gh release create ${{ github.ref_name }} \
           --generate-notes \
           --draft
-
+    
     - name: Upload Release Asset
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release upload ${{ github.ref_name }} ./release/markdown-master-${{ github.ref_name }}.zip --clobber
-
+        gh release upload ${{ github.ref_name }} ./release/markdown-master-v${{ github.ref_name }}.zip --clobber
+    
     - name: Publish Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
