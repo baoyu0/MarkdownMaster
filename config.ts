@@ -12,4 +12,6 @@ export const DEFAULT_SETTINGS: MarkdownMasterSettings = {
   enableImageOptimization: true,
   enableTextStatistics: true,
   enableTitleNumbering: false,
+  listIndentation: 4,
+  specialCharHandling: 'ignore'
 };

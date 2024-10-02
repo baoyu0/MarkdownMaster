@@ -24,6 +24,19 @@ class HeadingConversionRule implements FormatRule {
 
 // ... 其他规则类的实现 ...
 
+// 格式化器类
+class Formatter {
+  private rules: FormatRule[] = [];
+
+  addRule(rule: FormatRule): void {
+    this.rules.push(rule);
+  }
+
+  format(content: string): string {
+    return this.rules.reduce((formattedContent, rule) => rule.apply(formattedContent), content);
+  }
+}
+
 // 规则工厂
 export class RuleFactory {
   private static ruleMap: { [key: string]: new (...args: any[]) => FormatRule } = {
@@ -45,19 +58,6 @@ export class RuleFactory {
   }
 }
 
-// 格式化器类
-class Formatter {
-  private rules: FormatRule[] = [];
-
-  addRule(rule: FormatRule): void {
-    this.rules.push(rule);
-  }
-
-  format(content: string): string {
-    return this.rules.reduce((formattedContent, rule) => rule.apply(formattedContent), content);
-  }
-}
-
 // 主格式化函数
 export function formatMarkdown(content: string, settings: MarkdownMasterSettings): string {
   const formatter = new Formatter();
@@ -71,8 +71,6 @@ export function formatMarkdown(content: string, settings: MarkdownMasterSettings
       formatter.addRule(RuleFactory.createRule('CustomRegex', rule.pattern, rule.replacement));
     });
   }
-
-  // ... 其他代码 ...
 
   return formatter.format(content).trim();
 }

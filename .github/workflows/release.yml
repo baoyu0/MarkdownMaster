@@ -16,6 +16,8 @@ jobs:
     - run: npm ci
     - run: npm run build
     - run: npm run package
+    - name: List files in release directory
+      run: ls -R release
 
     - name: Create Release
       env:
