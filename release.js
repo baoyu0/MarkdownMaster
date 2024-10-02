@@ -10,7 +10,20 @@ if (!newVersion) {
     process.exit(1);
 }
 
+// 检查版本号格式
+if (!/^\d+\.\d+\.\d+$/.test(newVersion)) {
+    console.error('版本号格式不正确。请使用 x.y.z 格式，其中 x、y 和 z 都是数字。');
+    process.exit(1);
+}
+
 try {
+    // 检查工作目录是否干净
+    const status = execSync('git status --porcelain').toString().trim();
+    if (status) {
+        console.error('工作目录不干净。请提交或存储您的更改后再运行此脚本。');
+        process.exit(1);
+    }
+
     // 运行版本更新脚本
     execSync(`node update-version.js ${newVersion}`, { stdio: 'inherit' });
 
