@@ -13,6 +13,7 @@ interface MarkdownMasterSettings {
     enableImageOptimization: boolean;
     enableTextStatistics: boolean;
     enableTitleNumbering: boolean;
+    darkMode: boolean;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -27,6 +28,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     enableImageOptimization: true,
     enableTextStatistics: false,
     enableTitleNumbering: true,
+    darkMode: false,
 }
 
 export default class MarkdownMasterPlugin extends Plugin {
@@ -40,13 +42,15 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.formatHistory = new FormatHistory();
         this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
-        this.addRibbonIcon("pencil", "Markdown Master", (evt) => {
+        this.addRibbonIcon("pencil-line", "Markdown Master", (evt) => {
             this.showFormatOptions();
         });
 
+        // 添加格式化命令
         this.addCommand({
             id: 'format-markdown',
             name: '格式化当前Markdown文件',
+            // 移除 hotkeys 配置，因为它在 Obsidian API 中不是标准选项
             callback: () => this.showFormatOptions()
         });
 
@@ -85,6 +89,16 @@ export default class MarkdownMasterPlugin extends Plugin {
             name: '显示文本统计',
             callback: () => this.showTextStatistics()
         });
+
+        // 添加主题切换命令
+        this.addCommand({
+            id: 'toggle-theme',
+            name: '切换主题模式',
+            callback: () => this.toggleTheme()
+        });
+
+        // 初始化主题
+        this.applyTheme();
     }
 
     onunload() {
@@ -263,6 +277,24 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         new TextStatisticsModal(this.app, wordCount, charCount, lineCount).open();
     }
+
+    // 添加主题切换方法
+    toggleTheme() {
+        this.settings.darkMode = !this.settings.darkMode;
+        this.saveSettings();
+        this.applyTheme();
+    }
+
+    // 应用主题
+    applyTheme() {
+        if (this.settings.darkMode) {
+            document.body.classList.add('theme-dark');
+            document.body.classList.remove('theme-light');
+        } else {
+            document.body.classList.add('theme-light');
+            document.body.classList.remove('theme-dark');
+        }
+    }
 }
 
 class FormatPreviewModal extends Modal {
@@ -281,20 +313,20 @@ class FormatPreviewModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: '预览格式化结果' });
+        contentEl.createEl("h2", { text: "预览格式化结果", attr: { 'aria-label': '格式化预览标题' } });
 
         this.displayDiff();
 
         new Setting(contentEl)
-            .addButton(btn => btn
-                .setButtonText('应用更改')
+            .addButton((btn) => btn
+                .setButtonText("应用更改")
                 .setCta()
                 .onClick(() => {
                     this.result = true;
                     this.close();
                 }))
-            .addButton(btn => btn
-                .setButtonText('取消')
+            .addButton((btn) => btn
+                .setButtonText("取消")
                 .onClick(() => {
                     this.result = false;
                     this.close();
@@ -529,6 +561,17 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.enableTitleNumbering = value;
                     await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('深色模式')
+            .setDesc('启用深色模式')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.darkMode)
+                .onChange(async (value) => {
+                    this.plugin.settings.darkMode = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.applyTheme();
                 }));
     }
 }

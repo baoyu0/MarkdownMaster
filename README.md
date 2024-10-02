@@ -18,6 +18,7 @@ Markdown Master 是一个为 Obsidian 设计的插件，提供一键式 Markdown
 - 图片链接优化
 - 文本统计
 - 标题编号优化
+- 主题切换（明暗模式）
 
 ## 格式化规则
 
@@ -39,6 +40,7 @@ Markdown Master 是一个为 Obsidian 设计的插件，提供一键式 Markdown
    - "Markdown Master: 批量格式化所有Markdown文件"
    - "Markdown Master: 显示格式化历史记录"
    - "Markdown Master: 显示文本统计"
+   - "Markdown Master: 切换主题模式"
 
 2. 点击功能区中的铅笔图标来打开格式化选项。
 
@@ -69,6 +71,7 @@ Markdown Master 是一个为 Obsidian 设计的插件，提供一键式 Markdown
 
 1. 启用或禁用特定的格式化规则
 2. 添加自定义正则表达式规则（格式：正则表达式|||替换内容）
+3. 切换深色模式
 
 ## 贡献
 

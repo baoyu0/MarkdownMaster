@@ -1,40 +1,45 @@
 /* Markdown Master 插件样式 */
 
-.markdown-master-modal {
-    max-width: 800px;
-    width: 90%;
+/* 定义变量 */
+:root {
+    --mm-primary-color: #007bff;
+    --mm-secondary-color: #6c757d;
+    --mm-background-color: #f8f9fa;
+    --mm-text-color: #333;
+    --mm-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.markdown-master-textarea {
-    width: 100%;
-    height: 200px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    padding: 10px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 5px;
-    background-color: var(--background-primary);
-    color: var(--text-normal);
+/* 通用样式 */
+.markdown-master-modal {
+    font-family: var(--mm-font-family);
+    max-width: 800px;
+    width: 90%;
+    background-color: var(--mm-background-color);
+    color: var(--mm-text-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out;
 }
 
 .markdown-master-button {
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
+    background-color: var(--mm-primary-color);
+    color: #fff;
     padding: 8px 16px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.2s ease-in-out;
 }
 
 .markdown-master-button:hover {
-    background-color: var(--interactive-accent-hover);
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .markdown-master-modal h2 {
-    color: var(--text-accent);
-    border-bottom: 1px solid var(--background-modifier-border);
+    color: var(--mm-primary-color);
+    border-bottom: 1px solid var(--mm-secondary-color);
     padding-bottom: 10px;
     margin-bottom: 20px;
 }
@@ -59,12 +64,100 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     padding: 10px;
-    border: 1px solid var(--background-modifier-border);
+    border: 1px solid var(--mm-secondary-color);
     border-radius: 5px;
-    background-color: var(--background-primary);
+    background-color: #fff;
     margin-bottom: 20px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-.markdown-master-diff span {
-    display: inline;
+.markdown-master-diff::-webkit-scrollbar {
+    width: 8px;
+}
+
+.markdown-master-diff::-webkit-scrollbar-track {
+    background: var(--mm-background-color);
+}
+
+.markdown-master-diff::-webkit-scrollbar-thumb {
+    background-color: var(--mm-secondary-color);
+    border-radius: 4px;
+    border: 2px solid var(--mm-background-color);
+}
+
+.markdown-master-card {
+    background-color: var(--mm-background-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.markdown-master-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--mm-secondary-color);
+    border-radius: 4px;
+    font-family: var(--mm-font-family);
+}
+
+.markdown-master-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--mm-secondary-color);
+    border-radius: 4px;
+    background-color: var(--mm-background-color);
+    font-family: var(--mm-font-family);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .markdown-master-modal {
+        width: 95%;
+        padding: 15px;
+    }
+}
+
+/* 深色模式样式 */
+.theme-dark .markdown-master-modal {
+    background-color: #2f3136;
+    color: #ffffff;
+}
+
+.theme-dark .markdown-master-button {
+    background-color: #5865f2;
+}
+
+.theme-dark .markdown-master-button:hover {
+    background-color: #4752c4;
+}
+
+.theme-dark .markdown-master-card {
+    background-color: #36393f;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.theme-dark .markdown-master-input,
+.theme-dark .markdown-master-select {
+    background-color: #40444b;
+    border-color: #202225;
+    color: #ffffff;
+}
+
+.theme-dark .markdown-master-diff {
+    background-color: #36393f;
+    border-color: #202225;
+}
+
+.theme-dark .markdown-master-diff span[style*="color: green"] {
+    color: #43b581 !important;
+}
+
+.theme-dark .markdown-master-diff span[style*="color: red"] {
+    color: #f04747 !important;
+}
+
+.theme-dark .markdown-master-diff span[style*="color: grey"] {
+    color: #b9bbbe !important;
 }
