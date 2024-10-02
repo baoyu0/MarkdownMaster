@@ -1,0 +1,97 @@
+/* Markdown Master 插件样式 */
+
+.markdown-master-modal {
+    max-width: 800px;
+    width: 90%;
+}
+
+.markdown-master-textarea {
+    width: 100%;
+    height: 200px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.markdown-master-button {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.markdown-master-button:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+.markdown-master-modal h2 {
+    color: var(--text-accent);
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.markdown-master-setting-item {
+    margin-bottom: 20px;
+}
+
+.markdown-master-setting-item .setting-item-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.markdown-master-setting-item .setting-item-description {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.markdown-master-diff {
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    background-color: var(--background-primary);
+    margin-bottom: 20px;
+}
+
+.markdown-master-diff span {
+    display: inline;
+}
+
+.markdown-master-rule-management .rule-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.markdown-master-rule-management .rule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: 5px;
+    cursor: move;
+}
+
+.markdown-master-rule-management .rule-name {
+    flex-grow: 1;
+}
+
+.markdown-master-rule-management .rule-priority {
+    margin: 0 10px;
+}
+
+.markdown-master-rule-management .rule-toggle {
+    margin-left: 10px;
+}
