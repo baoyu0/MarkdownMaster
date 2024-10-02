@@ -17,9 +17,6 @@ jobs:
     - run: npm run build
     - run: npm run package
     
-    - name: List files in release directory
-      run: ls -R release
-    
     - name: List release directory contents
       run: |
         ls -la ./release

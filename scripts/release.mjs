@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
+import path from 'path';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
@@ -15,6 +16,14 @@ async function release(version) {
     // 打包插件
     execSync('npm run package', { stdio: 'inherit' });
     
+    // 验证生成的ZIP文件
+    const zipFilename = `markdown-master-${version}.zip`;
+    const zipPath = path.join('./release', zipFilename);
+    if (!fs.existsSync(zipPath)) {
+        throw new Error(`Expected ZIP file not found: ${zipPath}`);
+    }
+    console.log(`Verified: ${zipFilename} has been created successfully.`);
+
     // Git 操作
     gitOperations(version);
     
