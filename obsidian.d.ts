@@ -59,6 +59,8 @@ declare module "obsidian" {
         addButton(cb: (button: ButtonComponent) => any): this;
         addToggle(cb: (toggle: ToggleComponent) => any): this;
         addTextArea(cb: (text: TextAreaComponent) => any): this;
+        addSlider(callback: (slider: SliderComponent) => any): this;
+        addDropdown(callback: (dropdown: DropdownComponent) => any): this;
     }
 
     export interface ButtonComponent {
@@ -76,6 +78,19 @@ declare module "obsidian" {
         setValue(value: string): this;
         onChange(callback: (value: string) => void): this;
         setPlaceholder(placeholder: string): this;  // 添加这一行
+    }
+
+    export interface SliderComponent {
+        setLimits(min: number, max: number, step: number): this;
+        setValue(value: number): this;
+        setDynamicTooltip(): this;
+        onChange(callback: (value: number) => void): this;
+    }
+
+    export interface DropdownComponent {
+        addOption(value: string, display: string): this;
+        setValue(value: string): this;
+        onChange(callback: (value: string) => void): this;
     }
 
     export class Notice {

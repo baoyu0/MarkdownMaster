@@ -13,6 +13,7 @@
     "strictNullChecks": true,
     "strict": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "lib": [
       "DOM",
       "ES5",

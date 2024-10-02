@@ -68,3 +68,30 @@
 .markdown-master-diff span {
     display: inline;
 }
+
+.markdown-master-rule-management .rule-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.markdown-master-rule-management .rule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: 5px;
+    cursor: move;
+}
+
+.markdown-master-rule-management .rule-name {
+    flex-grow: 1;
+}
+
+.markdown-master-rule-management .rule-priority {
+    margin: 0 10px;
+}
+
+.markdown-master-rule-management .rule-toggle {
+    margin-left: 10px;
+}
