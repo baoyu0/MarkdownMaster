@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync, rmSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, rmSync, existsSync } from 'fs';
 import AdmZip from 'adm-zip';
 import path from 'path';
 
@@ -34,7 +34,10 @@ zip.addLocalFolder(tempDir);
 const zipFilename = `markdown-master-${version}.zip`;
 zip.writeZip(path.join(targetDir, zipFilename));
 
-// 清理临时目录
-rmSync(tempDir, { recursive: true, force: true });
+// 验证生成的 ZIP 文件
+const zipPath = path.join(targetDir, zipFilename);
+if (!existsSync(zipPath)) {
+    throw new Error(`Expected ZIP file not found: ${zipPath}`);
+}
 
 console.log(`Plugin packaged: ${zipFilename}`);
