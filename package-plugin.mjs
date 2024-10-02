@@ -21,7 +21,19 @@ mkdirSync(tempDir, { recursive: true });
 // 复制必要的文件到临时目录
 const filesToCopy = ['main.js', 'manifest.json', 'styles.css'];
 filesToCopy.forEach(file => {
-    copyFileSync(file, path.join(tempDir, file));
+    if (existsSync(file)) {
+        copyFileSync(file, path.join(tempDir, file));
+    } else {
+        console.warn(`Warning: ${file} not found, skipping...`);
+    }
+});
+
+// 验证必要文件是否存在
+const requiredFiles = ['main.js', 'manifest.json'];
+requiredFiles.forEach(file => {
+    if (!existsSync(path.join(tempDir, file))) {
+        throw new Error(`Required file ${file} is missing from the plugin package.`);
+    }
 });
 
 // 创建 zip 文件
@@ -41,3 +53,6 @@ if (!existsSync(zipPath)) {
 }
 
 console.log(`Plugin packaged: ${zipFilename}`);
+
+// 清理临时目录
+rmSync(tempDir, { recursive: true, force: true });
