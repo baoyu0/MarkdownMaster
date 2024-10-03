@@ -94,6 +94,9 @@ export default class MarkdownMasterPlugin extends Plugin {
             name: '显示文本统计',
             callback: () => this.showTextStatistics()
         });
+
+        // 删除 syncVersions 函数的调用
+        // await this.syncVersions();
     }
 
     onunload() {
@@ -316,6 +319,9 @@ export default class MarkdownMasterPlugin extends Plugin {
         });
         this.saveSettings();
     }
+
+    // 删除 syncVersions 函数
+    // async syncVersions() { ... }
 }
 
 class FormatPreviewModal extends Modal {
