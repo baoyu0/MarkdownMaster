@@ -1,55 +1,47 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { execSync } from 'child_process';
-import semver from 'semver';
+import fs from 'fs';
+import path from 'path';
 
-async function release(releaseType = 'patch') {
+const updateVersionInFile = (filePath, newVersion) => {
+    const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    content.version = newVersion;
+    fs.writeFileSync(filePath, JSON.stringify(content, null, 2) + '\n');
+};
+
+try {
+    // 获取最新的 git tag 作为版本号
+    const latestTag = execSync('git describe --tags --abbrev=0').toString().trim();
+    const newVersion = latestTag.startsWith('v') ? latestTag.slice(1) : latestTag;
+
+    console.log(`Releasing new version: ${newVersion}`);
+
+    // 更新文件中的版本号
+    updateVersionInFile('package.json', newVersion);
+    updateVersionInFile('manifest.json', newVersion);
+
+    // 构建和打包
+    execSync('npm run build', { stdio: 'inherit' });
+    execSync('npm run package', { stdio: 'inherit' });
+
+    // 提交更改
+    execSync('git add .', { stdio: 'inherit' });
+    execSync(`git commit -m "Release ${newVersion}"`, { stdio: 'inherit' });
+
+    // 创建新标签
+    execSync(`git tag ${newVersion}`, { stdio: 'inherit' });
+
+    // 推送提交
+    execSync('git push', { stdio: 'inherit' });
+
+    // 推送标签，忽略错误
     try {
-        // 读取当前版本
-        const packageJson = JSON.parse(await fs.readFile('package.json', 'utf8'));
-        const currentVersion = packageJson.version;
-
-        // 计算新版本
-        const newVersion = semver.inc(currentVersion, releaseType);
-        console.log(`Releasing new version: ${newVersion}`);
-
-        // 更新版本号
-        await updateVersions(newVersion);
-
-        // 构建项目
-        execSync('npm run build', { stdio: 'inherit' });
-
-        // 打包插件
-        execSync('npm run package', { stdio: 'inherit' });
-
-        // 提交更改
-        execSync('git add .', { stdio: 'inherit' });
-        execSync(`git commit -m "Release v${newVersion}"`, { stdio: 'inherit' });
-        execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
-
-        // 推送更改和标签
-        execSync('git push && git push --tags', { stdio: 'inherit' });
-
-        // 创建 GitHub Release
-        const zipPath = path.join('release', `markdown-master-${newVersion}.zip`);
-        execSync(`gh release create v${newVersion} ${zipPath} --title "Release ${newVersion}" --notes "Release ${newVersion}"`, { stdio: 'inherit' });
-
-        console.log(`Version ${newVersion} has been released successfully!`);
-    } catch (error) {
-        console.error(`Release failed: ${error.message}`);
-        process.exit(1);
+        execSync('git push --tags', { stdio: 'inherit' });
+    } catch (tagError) {
+        console.warn('Warning: Some tags failed to push. This is often normal if they already exist remotely.');
     }
-}
 
-async function updateVersions(version) {
-    const files = ['package.json', 'manifest.json'];
-    for (const file of files) {
-        const content = JSON.parse(await fs.readFile(file, 'utf8'));
-        content.version = version;
-        await fs.writeFile(file, JSON.stringify(content, null, 2));
-    }
+    console.log(`Successfully released version ${newVersion}`);
+} catch (error) {
+    console.error('Release failed:', error.message);
+    process.exit(1);
 }
-
-// 获取命令行参数
-const releaseType = process.argv[2] || 'patch';
-release(releaseType);
