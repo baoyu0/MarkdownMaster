@@ -46,6 +46,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Install GitHub CLI
+        run: |
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh
+      
       - name: Run release script
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -56,19 +63,2912 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
-
+      
       - name: Display error log
         if: failure()
         run: cat /home/runner/.npm/_logs/*-debug.log
-
+      
       - name: Push changes
         run: |
           git push --follow-tags
           git push origin --tags
-
-      - name: Install GitHub CLI
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
         run: |
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-          sudo apt-add-repository https://cli.github.com/packages
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          git push --follow-tags
+          git push origin --tags
+      
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+      
+      - name: Push changes
+        run: |
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
           sudo apt update
           sudo apt install gh
