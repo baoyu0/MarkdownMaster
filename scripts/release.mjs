@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import path from 'path';
 import { execSync } from 'child_process';
 import semver from 'semver';
 
@@ -28,6 +29,10 @@ async function release(releaseType = 'patch') {
 
         // 推送更改和标签
         execSync('git push && git push --tags', { stdio: 'inherit' });
+
+        // 创建 GitHub Release
+        const zipPath = path.join('release', `markdown-master-${newVersion}.zip`);
+        execSync(`gh release create v${newVersion} ${zipPath} --title "Release ${newVersion}" --notes "Release ${newVersion}"`, { stdio: 'inherit' });
 
         console.log(`Version ${newVersion} has been released successfully!`);
     } catch (error) {
