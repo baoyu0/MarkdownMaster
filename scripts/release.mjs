@@ -9,9 +9,16 @@ const updateVersionInFile = (filePath, newVersion) => {
 };
 
 try {
-    // 获取最新的 git tag 作为版本号
-    const latestTag = execSync('git describe --tags --abbrev=0').toString().trim();
-    const newVersion = latestTag.startsWith('v') ? latestTag.slice(1) : latestTag;
+    console.log('Process arguments:', process.argv);
+
+    // 获取 npm_config_new_version 环境变量
+    const newVersion = process.env.npm_config_new_version;
+    console.log('New version from env:', newVersion);
+
+    if (!newVersion || newVersion === 'null') {
+        console.error('Invalid version number. Please provide a version using --new-version=X.X.X');
+        process.exit(1);
+    }
 
     console.log(`Releasing new version: ${newVersion}`);
 
