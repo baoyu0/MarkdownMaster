@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, MarkdownView, TFile, DropdownComponent, Modal } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, MarkdownView, TFile, DropdownComponent, Modal, Notice } from 'obsidian';
 import { marked, Tokens } from 'marked';
 
 // 添加这个接口定义
@@ -42,6 +42,16 @@ export default class MarkdownMasterPlugin extends Plugin {
         // 添加命令
         this.addCommands();
         
+        // 添加侧边栏按钮
+        this.addRibbonIcon('brackets-glyph', 'MarkdownMaster 格式化', (evt: MouseEvent) => {
+            const file = this.app.workspace.getActiveFile();
+            if (file) {
+                this.formatMarkdown(file);
+            } else {
+                new Notice('没有打开的文件可以格式化');
+            }
+        });
+
         // 修复 'file-menu' 事件类型
         this.registerEvent(
             this.app.workspace.on('file-menu', (menu, file: TFile) => {
@@ -91,7 +101,9 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     async formatMarkdown(file: TFile) {
         const content = await this.app.vault.read(file);
-        new FormatPreviewModal(this.app, this, file, content).open();
+        const formattedContent = this.applyFormatting(content);
+        await this.app.vault.modify(file, formattedContent);
+        new Notice('文档已格式化');
     }
 
     applyFormatting(content: string): string {
@@ -190,6 +202,8 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         containerEl.createEl('h2', {text: 'Markdown Master 设置'});
+
+        containerEl.createEl('p', {text: '您可以在侧边栏找到 MarkdownMaster 的快速格式化按钮。'});
 
         new Setting(containerEl)
             .setName('默认标题级别')
