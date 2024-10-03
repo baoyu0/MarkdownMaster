@@ -5,6 +5,12 @@ import semver from 'semver';
 
 async function release(releaseType = 'patch') {
     try {
+        console.log('Fetching latest changes...');
+        execSync('git fetch origin', { stdio: 'inherit' });
+
+        console.log('Merging remote changes...');
+        execSync('git merge origin/feature --no-edit', { stdio: 'inherit' });
+
         // 读取当前版本
         const packageJson = JSON.parse(await fs.readFile('package.json', 'utf8'));
         const currentVersion = packageJson.version;
@@ -28,7 +34,9 @@ async function release(releaseType = 'patch') {
         execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
 
         // 推送更改和标签
-        execSync('git push && git push --tags', { stdio: 'inherit' });
+        console.log('Pushing changes and tags...');
+        execSync('git push origin feature', { stdio: 'inherit' });
+        execSync('git push --tags', { stdio: 'inherit' });
 
         // 创建 GitHub Release
         const zipPath = path.join('release', `markdown-master-${newVersion}.zip`);
