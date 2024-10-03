@@ -1,7 +1,7 @@
 {
   "id": "markdown-master",
   "name": "Markdown Master",
-  "version": "1.2.44",
+  "version": "1.2.45",
   "minAppVersion": "0.15.0",
   "description": "Markdown Master 是一个为 Obsidian 设计的插件，旨在提供一键式 Markdown 文件格式化功能。",
   "author": "dandan",

@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import semver from 'semver';
 
 const updateVersionInFile = (filePath, newVersion) => {
     const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -11,12 +12,19 @@ const updateVersionInFile = (filePath, newVersion) => {
 try {
     console.log('Process arguments:', process.argv);
 
-    // 获取 npm_config_new_version 环境变量
-    const newVersion = process.env.npm_config_new_version;
-    console.log('New version from env:', newVersion);
+    // 获取当前版本
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const currentVersion = packageJson.version;
 
-    if (!newVersion || newVersion === 'null') {
-        console.error('Invalid version number. Please provide a version using --new-version=X.X.X');
+    // 计算新版本
+    const releaseType = process.argv[2] || 'patch';
+    const newVersion = semver.inc(currentVersion, releaseType);
+
+    console.log(`Current version: ${currentVersion}`);
+    console.log(`New version: ${newVersion}`);
+
+    if (!newVersion) {
+        console.error('Invalid version number or release type.');
         process.exit(1);
     }
 
