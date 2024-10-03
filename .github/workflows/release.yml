@@ -26,7 +26,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: '16'  # 或更高版本，如 '18'
       
       - name: Display package.json content
         run: cat package.json
@@ -55,8 +55,20 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+        continue-on-error: true
+
+      - name: Display error log
+        if: failure()
+        run: cat /home/runner/.npm/_logs/*-debug.log
+
       - name: Push changes
         run: |
           git push --follow-tags
           git push origin --tags
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+          sudo apt-add-repository https://cli.github.com/packages
+          sudo apt update
+          sudo apt install gh
