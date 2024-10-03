@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: '14'
       
+      - name: Display package.json content
+        run: cat package.json
+      
       - name: Cache node modules
         uses: actions/cache@v2
         env:
