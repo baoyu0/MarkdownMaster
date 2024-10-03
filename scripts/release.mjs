@@ -18,6 +18,9 @@ async function release(releaseType = 'patch') {
         // 构建项目
         execSync('npm run build', { stdio: 'inherit' });
 
+        // 打包插件
+        execSync('npm run package', { stdio: 'inherit' });
+
         // 提交更改
         execSync('git add .', { stdio: 'inherit' });
         execSync(`git commit -m "Release v${newVersion}"`, { stdio: 'inherit' });

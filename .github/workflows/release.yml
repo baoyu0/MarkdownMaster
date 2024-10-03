@@ -27,9 +27,9 @@ jobs:
         run: |
           message=$(git log --format=%B -n 1 ${{ github.event.after }})
           if [[ $message == *"[release]"* ]]; then
-            echo "::set-output name=release::true"
+            echo "release=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=release::false"
+            echo "release=false" >> $GITHUB_OUTPUT
           fi
 
   release:
