@@ -60,6 +60,7 @@ jobs:
       
       - name: Push changes
         run: |
+          git pull --rebase origin ${{ github.ref }}
           git push --follow-tags
           git push origin --tags
       
