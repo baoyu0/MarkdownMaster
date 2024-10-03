@@ -9,6 +9,9 @@ declare module "obsidian" {
     export interface Workspace {
         getActiveViewOfType<T extends View>(type: Constructor<T>): T | null;
         on(name: 'file-open', callback: (file: TFile) => any, ctx?: any): EventRef;
+        on(name: 'file-menu', callback: (menu: any, file: TFile, source: string) => any): EventRef;
+        on(name: 'modify', callback: (file: TFile) => any): EventRef;
+        getActiveFile(): TFile | null;  // 添加这一行
     }
 
     export class Plugin {
@@ -125,6 +128,7 @@ declare module "obsidian" {
         getMarkdownFiles(): TFile[];
         read(file: TFile): Promise<string>;
         modify(file: TFile, data: string): Promise<void>;
+        on(name: 'modify', callback: (file: TFile) => any): EventRef;
     }
 
     export interface TFile {
@@ -134,6 +138,8 @@ declare module "obsidian" {
     }
 
     export type EventRef = any;
+
+    export type TFileType = TFile;
 }
 
 export * from "obsidian";
