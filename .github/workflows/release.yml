@@ -1,72 +1,60 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      releaseType:
+        description: '发布类型 (patch/minor/major)'
+        required: true
+        default: 'patch'
   push:
-    tags:
-      - 'v*'
+    branches:
+      - '*'  # 匹配所有分支
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - '.github/**'
 
 jobs:
-  build:
+  check_commit_message:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check_message.outputs.release }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check commit message
+        id: check_message
+        run: |
+          message=$(git log --format=%B -n 1 ${{ github.event.after }})
+          if [[ $message == *"[release]"* ]]; then
+            echo "::set-output name=release::true"
+          else
+            echo "::set-output name=release::false"
+          fi
+
+  release:
+    needs: check_commit_message
+    if: github.event_name == 'workflow_dispatch' || needs.check_commit_message.outputs.release == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Extract version from tag
-      id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
-
-    - name: Update version and build
-      run: |
-        npm run release -- --new_version=${{ steps.get_version.outputs.VERSION }}
-        npm run build  # 这里会运行 sync-version 脚本
-
-    - name: Verify version consistency
-      run: |
-        version=$(node -p "require('./package.json').version")
-        manifest_version=$(node -p "require('./manifest.json').version")
-        if [ "$version" != "$manifest_version" ]; then
-          echo "Version mismatch: package.json ($version) != manifest.json ($manifest_version)"
-          exit 1
-        fi
-        if [ "$version" != "${{ steps.get_version.outputs.VERSION }}" ]; then
-          echo "Version mismatch: Tag version (${{ steps.get_version.outputs.VERSION }}) != package.json ($version)"
-          exit 1
-        fi
-        echo "Version consistency verified: $version"
-
-    - name: Package plugin
-      run: npm run package
-
-    - name: Create Release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh release create ${{ github.ref_name }} \
-          --generate-notes \
-          --draft
-
-    - name: Upload Release Asset
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        zip_file=$(ls ./release/markdown-master-*.zip | head -n 1)
-        if [ -f "$zip_file" ]; then
-          gh release upload ${{ github.ref_name }} "$zip_file" --clobber
-        else
-          echo "ZIP file not found in release directory"
-          exit 1
-        fi
-
-    - name: Publish Release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh release edit ${{ github.ref_name }} --draft=false
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: npm ci
+      - name: Configure Git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+      - name: Release
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            npm run release -- ${{ github.event.inputs.releaseType }}
+          else
+            npm run release
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
