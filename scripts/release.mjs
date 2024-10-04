@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import semver from 'semver'; // 请确保已安装 semver 包
 
 const updateVersionInFile = (filePath, newVersion) => {
     const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -11,12 +12,18 @@ const updateVersionInFile = (filePath, newVersion) => {
 try {
     console.log('Process arguments:', process.argv);
 
-    // 获取 npm_config_new_version 环境变量
-    const newVersion = process.env.npm_config_new_version;
-    console.log('New version from env:', newVersion);
+    // 获取当前版本
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const currentVersion = packageJson.version;
 
-    if (!newVersion || newVersion === 'null') {
-        console.error('Invalid version number. Please provide a version using --new-version=X.X.X');
+    // 如果没有提供新版本，则自动增加补丁版本号
+    const newVersion = process.env.npm_config_new_version || semver.inc(currentVersion, 'patch');
+
+    console.log('Current version:', currentVersion);
+    console.log('New version:', newVersion);
+
+    if (!semver.valid(newVersion)) {
+        console.error('Invalid version number. Please provide a valid semver version.');
         process.exit(1);
     }
 
