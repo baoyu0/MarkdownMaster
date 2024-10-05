@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # 这将匹配所有以 v 开头的 tag，如 v1.0.0
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,31 +15,74 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v3
+
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '20'
         cache: 'npm'
-    - run: npm ci
-    - run: npm run build
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-node-
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+      # 如果您的项目没有测试，可以注释掉这一步
+
+    - name: Build
+      run: npm run build
+
+    - name: Check version format
+      run: |
+        if [[ ! ${{ github.ref_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Invalid version format. Expected format: v*.*.*"
+          exit 1
+        fi
+
+    - name: Update package.json version
+      run: |
+        VERSION=${{ github.ref_name }}
+        npm version ${VERSION#v} --no-git-tag-version
+
+    - name: Check build artifacts
+      run: |
+        if [ ! -f main.js ] || [ ! -f manifest.json ] || [ ! -f styles.css ]; then
+          echo "Missing required build artifacts"
+          exit 1
+        fi
 
     - name: Create Release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create ${{ github.ref_name }} \
           --generate-notes \
           --draft
+      continue-on-error: true
 
-    - name: Rename and Upload main.js to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Prepare and upload release files
       run: |
         mv main.js markdown-master-${{ github.ref_name }}.js
-        gh release upload ${{ github.ref_name }} markdown-master-${{ github.ref_name }}.js --clobber
+        gh release upload ${{ github.ref_name }} \
+          markdown-master-${{ github.ref_name }}.js \
+          manifest.json \
+          styles.css \
+          --clobber
+      if: success()
 
     - name: Publish Release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release edit ${{ github.ref_name }} --draft=false
+      if: success()
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "Release creation failed. Please check the logs for more information."
+        # 这里可以添加发送通知的逻辑，比如发送邮件或者Slack消息

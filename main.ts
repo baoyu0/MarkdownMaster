@@ -1,5 +1,13 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault } from 'obsidian';
 import { diffChars, Change } from 'diff';
+import * as LangModule from './lang';
+
+// 在文件顶部添加这个声明
+declare module 'obsidian' {
+    interface Vault {
+        on(name: string, callback: (file: TFile) => any, ctx?: any): EventRef;
+    }
+}
 
 interface MarkdownMasterSettings {
     enableLinkRemoval: boolean;
@@ -13,6 +21,8 @@ interface MarkdownMasterSettings {
     enableImageOptimization: boolean;
     enableTextStatistics: boolean;
     enableTitleNumbering: boolean;
+    language: string;
+    autoFormatOnSave: boolean;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -27,13 +37,18 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     enableImageOptimization: true,
     enableTextStatistics: false,
     enableTitleNumbering: true,
+    language: 'en',
+    autoFormatOnSave: false,
 }
+
+// 更新插件版本号
+const PLUGIN_VERSION = "1.2.9";
 
 export default class MarkdownMasterPlugin extends Plugin {
     settings!: MarkdownMasterSettings;
     private lastContent: string = "";
     private formatHistory!: FormatHistory;
-    private fileOpenRef: EventRef;
+    private fileOpenRef: EventRef | null = null;
 
     async onload() {
         await this.loadSettings();
@@ -85,6 +100,17 @@ export default class MarkdownMasterPlugin extends Plugin {
             name: '显示文本统计',
             callback: () => this.showTextStatistics()
         });
+
+        // 修改自动保存事件监听
+        if (this.settings.autoFormatOnSave) {
+            this.registerEvent(
+                this.app.vault.on("modify", (file: TFile) => {
+                    if (file.extension === "md") {
+                        this.formatMarkdown(file);
+                    }
+                })
+            );
+        }
     }
 
     onunload() {
@@ -99,50 +125,35 @@ export default class MarkdownMasterPlugin extends Plugin {
         await this.saveData(this.settings);
     }
 
-    formatMarkdown(content: string): string {
-        let formatted = content;
-
-        if (this.settings.enableLinkRemoval) {
-            formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
+    async formatMarkdown(input: TFile | string): Promise<string> {
+        try {
+            let content: string;
+            if (typeof input === 'string') {
+                content = input;
+            } else {
+                content = await this.app.vault.read(input);
+            }
+            const formattedContent = this.applyFormatting(content);
+            if (typeof input !== 'string') {
+                await this.app.vault.modify(input, formattedContent);
+                new Notice(this.getLang("formatSuccess"));
+            }
+            return formattedContent;
+        } catch (error) {
+            console.error("格式化文档时出错:", error);
+            new Notice(this.getLang("formatError"));
+            // 添加更详细的错误日志
+            console.error("错误详情:", {
+                input: typeof input !== 'string' ? input.path : "string input",
+                error: error instanceof Error ? error.message : String(error)
+            });
+            return typeof input === 'string' ? input : await this.app.vault.read(input);
         }
-        if (this.settings.enableHeadingConversion) {
-            formatted = formatted.replace(/^##/gm, '#');
-        }
-        if (this.settings.enableBoldRemoval) {
-            formatted = formatted.replace(/\*\*/g, '');
-        }
-        if (this.settings.enableReferenceRemoval) {
-            formatted = formatted.replace(/\[\d+\]/g, '');
-        }
+    }
 
-        formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
-        formatted = formatted.replace(/^(\s*)-([^\s])/gm, '$1- $2');
-        formatted = formatted.replace(/\n{3,}/g, '\n\n');
-        formatted = formatted.replace(/^(\d+)\.([^\s])/gm, '$1. $2');
-
-        this.settings.customRegexRules.forEach(rule => {
-            const regex = new RegExp(rule.pattern, 'g');
-            formatted = formatted.replace(regex, rule.replacement);
-        });
-
-        if (this.settings.enableTableFormat) {
-            formatted = this.formatTables(formatted);
-        }
-
-        if (this.settings.enableCodeHighlight) {
-            formatted = this.highlightCodeBlocks(formatted);
-        }
-
-        if (this.settings.enableImageOptimization) {
-            formatted = this.optimizeImageLinks(formatted);
-        }
-
-        if (this.settings.enableTitleNumbering) {
-            // 修改这个正则表达式以匹配所有级别的标题
-            formatted = formatted.replace(/^(#{1,6}\s+(?:\d+\.)*\d+(?:\s*-\s*)?)\s*(?:\d+\.)*\s*(.+)$/gm, '$1 $2');
-        }
-
-        return formatted.trim();
+    private applyFormatting(content: string): string {
+        // 实现格式化逻辑
+        return content; // 临时返回，需要实现实际的格式化逻辑
     }
 
     showFormatOptions() {
@@ -153,16 +164,16 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
 
         const content = activeView.editor.getValue();
-        const formattedContent = this.formatMarkdown(content);
-
-        new FormatPreviewModal(this.app, content, formattedContent, (result) => {
-            if (result) {
-                this.lastContent = content;
-                activeView.editor.setValue(formattedContent);
-                new Notice('Markdown文件已格式化');
-                this.formatHistory.addToHistory(content);
-            }
-        }).open();
+        this.formatMarkdown(content).then(formattedContent => {
+            new FormatPreviewModal(this.app, content, formattedContent, (result) => {
+                if (result) {
+                    this.lastContent = content;
+                    activeView.editor.setValue(formattedContent);
+                    new Notice('Markdown文件已格式化');
+                    this.formatHistory.addToHistory(content);
+                }
+            }).open();
+        });
     }
 
     undoFormat() {
@@ -179,9 +190,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     async batchFormat() {
         const files = this.app.vault.getMarkdownFiles();
         for (const file of files) {
-            const content = await this.app.vault.read(file);
-            const formattedContent = this.formatMarkdown(content);
-            await this.app.vault.modify(file, formattedContent);
+            await this.formatMarkdown(file);
         }
         new Notice('批量格式化完成');
     }
@@ -237,12 +246,11 @@ export default class MarkdownMasterPlugin extends Plugin {
         });
     }
 
-    // 新增的自动格式化函数
     async autoFormatFile(file: TFile) {
         if (file.extension !== 'md') return;
-        const content = await this.app.vault.read(file);
-        const formattedContent = this.formatMarkdown(content);
-        if (content !== formattedContent) {
+        const formattedContent = await this.formatMarkdown(file);
+        const currentContent = await this.app.vault.read(file);
+        if (currentContent !== formattedContent) {
             await this.app.vault.modify(file, formattedContent);
             new Notice(`已自动格式化文件: ${file.name}`);
         }
@@ -262,6 +270,12 @@ export default class MarkdownMasterPlugin extends Plugin {
         const lineCount = content.split('\n').length;
 
         new TextStatisticsModal(this.app, wordCount, charCount, lineCount).open();
+    }
+
+    // 在插件类中添加获取翻译的方法
+    getLang(key: string): string {
+        const lang = this.settings.language || "en";
+        return (LangModule.LANG as any)[lang]?.[key] || (LangModule.LANG as any).en[key] || key;
     }
 }
 

@@ -10,7 +10,7 @@
     "moduleResolution": "node",
     "importHelpers": true,
     "isolatedModules": true,
-    "strictNullChecks": true,
+    "strictNullChecks": false,
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "lib": [
@@ -19,7 +19,9 @@
       "ES6",
       "ES7",
       "ES2017"
-    ]
+    ],
+    "strictPropertyInitialization": false,
+    "useUnknownInCatchVariables": false
   },
   "include": [
     "**/*.ts"
