@@ -57,7 +57,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
 
 
 // 更新插件版本号
-const PLUGIN_VERSION = "1.2.9";
+const PLUGIN_VERSION = "1.4.1";
 
 export default class MarkdownMasterPlugin extends Plugin {
     settings!: MarkdownMasterSettings;
