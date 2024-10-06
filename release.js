@@ -6,7 +6,7 @@ const path = require('path');
 const newVersion = process.argv[2];
 
 if (!newVersion) {
-    console.error('请提供新的版本号，例如: npm run release 1.2.4');
+    console.error('请提供新的版本号，例如: npm run release 1.2.9');
     process.exit(1);
 }
 
@@ -24,8 +24,23 @@ try {
         process.exit(1);
     }
 
-    // 运行版本更新脚本
-    execSync(`node update-version.js ${newVersion}`, { stdio: 'inherit' });
+    // 更新 package.json
+    const packageJsonPath = path.join(__dirname, 'package.json');
+    const packageJson = require(packageJsonPath);
+    packageJson.version = newVersion;
+    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+    // 更新 manifest.json
+    const manifestJsonPath = path.join(__dirname, 'manifest.json');
+    const manifestJson = require(manifestJsonPath);
+    manifestJson.version = newVersion;
+    fs.writeFileSync(manifestJsonPath, JSON.stringify(manifestJson, null, 2));
+
+    // 更新 versions.json
+    const versionsJsonPath = path.join(__dirname, 'versions.json');
+    const versionsJson = require(versionsJsonPath);
+    versionsJson[newVersion] = manifestJson.minAppVersion;
+    fs.writeFileSync(versionsJsonPath, JSON.stringify(versionsJson, null, 2));
 
     // 构建项目
     execSync('npm run build', { stdio: 'inherit' });
