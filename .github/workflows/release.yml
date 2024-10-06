@@ -36,17 +36,13 @@ jobs:
         cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
         zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
         
+        # 创建 release
         gh release create "$tag" \
           --title="$tag" \
-          --draft \
-          ${{ env.PLUGIN_NAME }}.zip main.js manifest.json styles.css
+          --draft
 
-    - name: Upload release asset
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        tag="${GITHUB_REF#refs/tags/}"
-        gh release upload "$tag" ${{ env.PLUGIN_NAME }}.zip --clobber
+        # 上传文件
+        gh release upload "$tag" ${{ env.PLUGIN_NAME }}.zip main.js manifest.json styles.css
 
     - name: Publish release
       env:
