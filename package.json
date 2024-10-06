@@ -8,7 +8,8 @@
     "build": "node esbuild.config.mjs production",
     "build-test": "node esbuild.config.mjs test",
     "update-version": "node update-version.js",
-    "release": "node release.js"
+    "release": "node release.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [
     "obsidian",
