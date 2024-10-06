@@ -8,6 +8,7 @@ declare module 'obsidian' {
         on(name: string, callback: (file: TFile) => any, ctx?: any): EventRef;
     }
 
+
     interface Setting {
         addDropdown(cb: (dropdown: DropdownComponent) => any): Setting;
     }
@@ -18,6 +19,7 @@ declare module 'obsidian' {
         onChange(cb: (value: string) => any): DropdownComponent;
     }
 }
+
 
 interface MarkdownMasterSettings {
     enableLinkRemoval: boolean;
@@ -53,6 +55,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     formatTemplate: 'none',
 }
 
+
 // 更新插件版本号
 const PLUGIN_VERSION = "1.2.9";
 
@@ -70,6 +73,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.addRibbonIcon("pencil", "Markdown Master", (evt) => {
             this.showFormatOptions();
         });
+
 
         this.addCommand({
             id: 'format-markdown',
@@ -95,7 +99,6 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.showFormatHistory()
         });
 
-        // 修改自动格式化功能的事件注册
         if (this.settings.enableAutoFormat) {
             this.fileOpenRef = this.registerEvent(
                 this.app.workspace.on('file-open', (file: TFile) => {
@@ -106,14 +109,12 @@ export default class MarkdownMasterPlugin extends Plugin {
             );
         }
 
-        // 添加文本统计命令
         this.addCommand({
             id: 'show-text-statistics',
             name: '显示文本统计',
             callback: () => this.showTextStatistics()
         });
 
-        // 修改自动保存事件监听
         if (this.settings.autoFormatOnSave) {
             this.registerEvent(
                 this.app.vault.on("modify", (file: TFile) => {
@@ -133,11 +134,11 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
 
+
     async saveSettings() {
         await this.saveData(this.settings);
     }
 
-    // 1. 处理大文件的方法
     private async processLargeFile(content: string, chunkSize: number = 10000): Promise<string> {
         const chunks = [];
         for (let i = 0; i < content.length; i += chunkSize) {
@@ -154,7 +155,6 @@ export default class MarkdownMasterPlugin extends Plugin {
         return formattedContent;
     }
 
-    // 2. 改进错误处理
     private handleError(error: unknown, context: string): void {
         console.error(`Error in ${context}:`, error);
         let errorMessage = '发生未知错误';
@@ -166,7 +166,6 @@ export default class MarkdownMasterPlugin extends Plugin {
         new Notice(`${context}出错: ${errorMessage}`);
     }
 
-    // 3. 增强的文本统计方法
     private getTextStatistics(content: string): {
         wordCount: number;
         charCount: number;
@@ -195,7 +194,6 @@ export default class MarkdownMasterPlugin extends Plugin {
         };
     }
 
-    // 修改 formatMarkdown 方法以使用新的功能
     async formatMarkdown(input: TFile | string): Promise<string> {
         try {
             let content: string;
@@ -217,11 +215,9 @@ export default class MarkdownMasterPlugin extends Plugin {
                 new Notice(this.getLang("formatSuccess"));
             }
 
-            // 添加文本统计
             if (this.settings.enableTextStatistics) {
                 const stats = this.getTextStatistics(formattedContent);
                 console.log('文本统计:', stats);
-                // 可以在这里添加显示统计信息的逻辑
             }
 
             return formattedContent;
@@ -234,7 +230,6 @@ export default class MarkdownMasterPlugin extends Plugin {
     private applyFormatting(content: string): string {
         let formattedContent = content;
 
-        // 应用选定的格式化模板
         if (this.settings.formatTemplate && this.settings.formatTemplate !== 'none') {
             formattedContent = this.applyFormatTemplate(formattedContent, this.settings.formatTemplate);
         }
@@ -277,6 +272,7 @@ export default class MarkdownMasterPlugin extends Plugin {
             formattedContent = formattedContent.replace(regex, rule.replacement);
         });
 
+
         return formattedContent;
     }
 
@@ -284,6 +280,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     private removeCertainLinks(content: string): string {
         return content.replace(/\[\d+\]\s*http:\/\/[^\s]+/g, '');
     }
+
 
     private convertHeadings(content: string): string {
         return content.replace(/^##\s/gm, '# ');
@@ -350,7 +347,6 @@ export default class MarkdownMasterPlugin extends Plugin {
         }).open();
     }
 
-    // 修改表格格式化函数，使用 String.prototype.padEnd 的替代方法
     formatTables(content: string): string {
         const tableRegex = /\|(.+)\|/g;
         return content.replace(tableRegex, (match) => {
@@ -467,6 +463,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 }
 
+
 class FormatPreviewModal extends Modal {
     private originalContent: string;
     private formattedContent: string;
@@ -502,6 +499,7 @@ class FormatPreviewModal extends Modal {
                     this.close();
                 }));
     }
+
 
     onClose() {
         const { contentEl } = this;
@@ -672,6 +670,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                         .filter(rule => rule.pattern && rule.replacement);
                     await this.plugin.saveSettings();
                 }));
+
 
         new Setting(containerEl)
             .setName('启用自动格式化')
