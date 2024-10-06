@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, TextAreaComponent } from 'obsidian';
 import { diffChars, Change } from 'diff';
 import * as LangModule from './lang';
 
@@ -11,6 +11,7 @@ declare module 'obsidian' {
 
     interface Setting {
         addDropdown(cb: (dropdown: DropdownComponent) => any): Setting;
+        addText(cb: (text: TextAreaComponent) => any): this;
     }
 
     interface DropdownComponent {
@@ -513,11 +514,11 @@ class FormatPreviewModal extends Modal {
         contentEl.empty();
         contentEl.createEl('h2', { text: '格式化预览' });
 
-        const originalTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as HTMLTextAreaElement;
+        const originalTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
         originalTextArea.value = this.originalContent;
         originalTextArea.readOnly = true;
 
-        const formattedTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as HTMLTextAreaElement;
+        const formattedTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
         formattedTextArea.value = this.formattedContent;
         formattedTextArea.readOnly = true;
 
@@ -678,10 +679,10 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.plugin.settings.enableLinkRemoval = value;
                     await this.plugin.saveSettings();
                 }))
-            .addText(text => text
+            .addText((text: TextAreaComponent) => text
                 .setPlaceholder('链接删除正则表达式')
                 .setValue(this.plugin.settings.linkRemovalRegex || '')
-                .onChange(async (value) => {
+                .onChange(async (value: string) => {
                     this.plugin.settings.linkRemovalRegex = value;
                     await this.plugin.saveSettings();
                 }));
