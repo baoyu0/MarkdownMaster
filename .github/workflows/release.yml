@@ -1,18 +1,17 @@
-name: Create Release
+name: Release Obsidian plugin
 
 on:
   push:
     tags:
-      - 'v*' # 这将匹配所有以 v 开头的 tag，如 v1.0.0
+      - "*"
 
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PLUGIN_NAME: markdown-master
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
     steps:
     - uses: actions/checkout@v3
 
@@ -20,73 +19,38 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '20'
-        cache: 'npm'
 
-    - name: Cache dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.npm
-        key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-node-
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run tests
-      run: npm test
-
-    - name: Build
-      run: npm run build
-
-    - name: Check version format
+    - name: Build plugin
       run: |
-        if [[ ! ${{ github.ref_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "Invalid version format. Expected format: v*.*.*"
-          exit 1
-        fi
+        npm install
+        npm run build
 
-    - name: Update package.json version
+    - name: Create release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        VERSION=${{ github.ref_name }}
-        CURRENT_VERSION=$(node -p "require('./package.json').version")
-        if [ "${VERSION#v}" != "$CURRENT_VERSION" ]; then
-          npm version ${VERSION#v} --no-git-tag-version
-        else
-          echo "Version is already up to date"
-        fi
+        tag="${GITHUB_REF#refs/tags/}"
+        
+        # 创建发布文件夹
+        mkdir ${{ env.PLUGIN_NAME }}
+        cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
+        zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
+        
+        gh release create "$tag" \
+          --title="$tag" \
+          --draft \
+          ${{ env.PLUGIN_NAME }}.zip main.js manifest.json styles.css
 
-    - name: Check build artifacts
+    - name: Upload release asset
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        if [ ! -f main.js ] || [ ! -f manifest.json ] || [ ! -f styles.css ]; then
-          echo "Missing required build artifacts"
-          exit 1
-        fi
+        tag="${GITHUB_REF#refs/tags/}"
+        gh release upload "$tag" ${{ env.PLUGIN_NAME }}.zip --clobber
 
-    - name: Create Release
+    - name: Publish release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create ${{ github.ref_name }} \
-          --generate-notes \
-          --draft
-      continue-on-error: true
-
-    - name: Prepare and upload release files
-      run: |
-        mv main.js markdown-master-${{ github.ref_name }}.js
-        gh release upload ${{ github.ref_name }} \
-          markdown-master-${{ github.ref_name }}.js \
-          manifest.json \
-          styles.css \
-          --clobber
-      if: success()
-
-    - name: Publish Release
-      run: |
-        gh release edit ${{ github.ref_name }} --draft=false
-      if: success()
-
-    - name: Notify on failure
-      if: failure()
-      run: |
-        echo "Release creation failed. Please check the logs for more information."
-        # 这里可以添加发送通知的逻辑，比如发送邮件或者Slack消息
+        tag="${GITHUB_REF#refs/tags/}"
+        gh release edit "$tag" --draft=false
