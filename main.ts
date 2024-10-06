@@ -12,12 +12,20 @@ declare module 'obsidian' {
     interface Setting {
         addDropdown(cb: (dropdown: DropdownComponent) => any): Setting;
         addText(cb: (text: TextAreaComponent) => any): this;
+        addSlider(cb: (slider: SliderComponent) => any): this;
     }
 
     interface DropdownComponent {
         addOption(value: string, display: string): DropdownComponent;
         setValue(value: string): DropdownComponent;
         onChange(cb: (value: string) => any): DropdownComponent;
+    }
+
+    interface SliderComponent {
+        setLimits(min: number, max: number, step: number): this;
+        setValue(value: number): this;
+        setDynamicTooltip(): this;
+        onChange(callback: (value: number) => void): this;
     }
 }
 
@@ -39,6 +47,9 @@ interface MarkdownMasterSettings {
     formatTemplate: string;
     linkRemovalRegex: string;
     headingConversionLevel: string;
+    enableListFormatting: boolean;
+    listBulletChar: '-' | '*' | '+';
+    listIndentSpaces: number;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -58,6 +69,9 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     formatTemplate: 'none',
     linkRemovalRegex: '\\[\\d+\\]\\s*http:\\/\\/[^\\s]+',
     headingConversionLevel: '1',
+    enableListFormatting: true,
+    listBulletChar: '-',
+    listIndentSpaces: 2,
 }
 
 
@@ -286,6 +300,9 @@ export default class MarkdownMasterPlugin extends Plugin {
             formattedContent = formattedContent.replace(regex, rule.replacement);
         });
 
+        if (this.settings.enableListFormatting) {
+            formattedContent = this.formatLists(formattedContent);
+        }
 
         return formattedContent;
     }
@@ -493,6 +510,17 @@ export default class MarkdownMasterPlugin extends Plugin {
         const content = activeView.editor.getValue();
         const formattedContent = this.applyFormatting(content);
         new FormatPreviewModal(this.app, this, content, formattedContent).open();
+    }
+
+    private formatLists(content: string): string {
+        if (!this.settings.enableListFormatting) return content;
+
+        const listRegex = /^(\s*)([*+-]|\d+\.)\s+/gm;
+        return content.replace(listRegex, (match, indent, bullet) => {
+            const newIndent = ' '.repeat(Math.floor(indent.length / this.settings.listIndentSpaces) * this.settings.listIndentSpaces);
+            const newBullet = /^\d+\./.test(bullet) ? bullet : this.settings.listBulletChar;
+            return `${newIndent}${newBullet} `;
+        });
     }
 }
 
@@ -764,5 +792,40 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     });
             });
+
+        new Setting(containerEl)
+            .setName('启用列表格式化')
+            .setDesc('统一列表符号和缩进')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableListFormatting)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableListFormatting = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('列表符号')
+            .setDesc('选择无序列表的符号')
+            .addDropdown(dropdown => dropdown
+                .addOption('-', '- (破折号)')
+                .addOption('*', '* (星号)')
+                .addOption('+', '+ (加号)')
+                .setValue(this.plugin.settings.listBulletChar)
+                .onChange(async (value) => {
+                    this.plugin.settings.listBulletChar = value as '-' | '*' | '+';
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('列表缩进空格数')
+            .setDesc('设置列表每级缩进的空格数')
+            .addSlider(slider => slider
+                .setLimits(2, 8, 2)
+                .setValue(this.plugin.settings.listIndentSpaces)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.listIndentSpaces = value;
+                    await this.plugin.saveSettings();
+                }));
     }
 }
