@@ -35,7 +35,6 @@ jobs:
 
     - name: Run tests
       run: npm test
-      # 如果您的项目没有测试，可以注释掉这一步
 
     - name: Build
       run: npm run build
@@ -50,7 +49,12 @@ jobs:
     - name: Update package.json version
       run: |
         VERSION=${{ github.ref_name }}
-        npm version ${VERSION#v} --no-git-tag-version
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        if [ "${VERSION#v}" != "$CURRENT_VERSION" ]; then
+          npm version ${VERSION#v} --no-git-tag-version
+        else
+          echo "Version is already up to date"
+        fi
 
     - name: Check build artifacts
       run: |
