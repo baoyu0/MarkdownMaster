@@ -27,29 +27,43 @@ try {
     // 更新 package.json
     const packageJsonPath = path.join(__dirname, 'package.json');
     const packageJson = require(packageJsonPath);
+    if (packageJson.version === newVersion) {
+        console.error(`package.json 中的版本号已经是 ${newVersion}`);
+        process.exit(1);
+    }
     packageJson.version = newVersion;
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+    console.log(`已更新 package.json 版本号为 ${newVersion}`);
 
     // 更新 manifest.json
     const manifestJsonPath = path.join(__dirname, 'manifest.json');
     const manifestJson = require(manifestJsonPath);
     manifestJson.version = newVersion;
     fs.writeFileSync(manifestJsonPath, JSON.stringify(manifestJson, null, 2));
+    console.log(`已更新 manifest.json 版本号为 ${newVersion}`);
 
     // 更新 versions.json
     const versionsJsonPath = path.join(__dirname, 'versions.json');
     const versionsJson = require(versionsJsonPath);
     versionsJson[newVersion] = manifestJson.minAppVersion;
     fs.writeFileSync(versionsJsonPath, JSON.stringify(versionsJson, null, 2));
+    console.log(`已更新 versions.json`);
 
     // 构建项目
+    console.log('开始构建项目...');
     execSync('npm run build', { stdio: 'inherit' });
+    console.log('项目构建完成');
 
     // Git 操作
+    console.log('执行 Git 操作...');
     execSync('git add .', { stdio: 'inherit' });
+    console.log('Git add 完成');
     execSync(`git commit -m "Bump version to ${newVersion}"`, { stdio: 'inherit' });
+    console.log('Git commit 完成');
     execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
+    console.log('Git tag 完成');
     execSync('git push && git push --tags', { stdio: 'inherit' });
+    console.log('Git push 完成');
 
     console.log(`版本 ${newVersion} 已成功发布！`);
 } catch (error) {
