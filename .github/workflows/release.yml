@@ -41,8 +41,8 @@ jobs:
           --title="$tag" \
           --draft
 
-        # 上传文件
-        gh release upload "$tag" ${{ env.PLUGIN_NAME }}.zip main.js manifest.json styles.css
+        # 只上传 zip 文件
+        gh release upload "$tag" ${{ env.PLUGIN_NAME }}.zip
 
     - name: Publish release
       env:
