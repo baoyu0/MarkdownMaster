@@ -36,6 +36,8 @@ interface MarkdownMasterSettings {
     language: string;
     autoFormatOnSave: boolean;
     formatTemplate: string;
+    linkRemovalRegex: string;
+    headingConversionLevel: string;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -53,6 +55,8 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     language: 'en',
     autoFormatOnSave: false,
     formatTemplate: 'none',
+    linkRemovalRegex: '\\[\\d+\\]\\s*http:\\/\\/[^\\s]+',
+    headingConversionLevel: '1',
 }
 
 
@@ -241,11 +245,14 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
 
         if (this.settings.enableLinkRemoval) {
-            formattedContent = this.removeCertainLinks(formattedContent);
+            const regex = new RegExp(this.settings.linkRemovalRegex, 'g');
+            formattedContent = formattedContent.replace(regex, '');
         }
 
         if (this.settings.enableHeadingConversion) {
-            formattedContent = this.convertHeadings(formattedContent);
+            const headingLevel = parseInt(this.settings.headingConversionLevel);
+            const regex = new RegExp(`^#{1,${headingLevel}}\\s`, 'gm');
+            formattedContent = formattedContent.replace(regex, '#'.repeat(headingLevel) + ' ');
         }
 
         if (this.settings.enableBoldRemoval) {
@@ -506,18 +513,33 @@ class FormatPreviewModal extends Modal {
         contentEl.empty();
         contentEl.createEl('h2', { text: '格式化预览' });
 
-        const originalTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
+        const originalTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as HTMLTextAreaElement;
         originalTextArea.value = this.originalContent;
         originalTextArea.readOnly = true;
 
-        const formattedTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
+        const formattedTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as HTMLTextAreaElement;
         formattedTextArea.value = this.formattedContent;
         formattedTextArea.readOnly = true;
 
         new Setting(contentEl)
             .addButton(btn => btn
+                .setButtonText('应用')
+                .setCta()
+                .onClick(() => {
+                    this.applyFormatting();
+                    this.close();
+                }))
+            .addButton(btn => btn
                 .setButtonText('关闭')
                 .onClick(() => this.close()));
+    }
+
+    applyFormatting() {
+        const activeView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            activeView.editor.setValue(this.formattedContent);
+            new Notice('格式化已应用');
+        }
     }
 
     onClose() {
@@ -634,6 +656,16 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        new Setting(containerEl)
+            .setName('保存时自动格式化')
+            .setDesc('保存文件时自动格式化')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoFormatOnSave)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoFormatOnSave = value;
+                    await this.plugin.saveSettings();
+                }));
+
         // 格式化选项
         containerEl.createEl('h3', { text: '格式化选项' });
 
@@ -645,9 +677,35 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.enableLinkRemoval = value;
                     await this.plugin.saveSettings();
+                }))
+            .addText(text => text
+                .setPlaceholder('链接删除正则表达式')
+                .setValue(this.plugin.settings.linkRemovalRegex || '')
+                .onChange(async (value) => {
+                    this.plugin.settings.linkRemovalRegex = value;
+                    await this.plugin.saveSettings();
                 }));
 
-        // ... 其他格式化选项 ...
+        new Setting(containerEl)
+            .setName('启用标题转换')
+            .setDesc('将二级标题转换为一级标题')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableHeadingConversion)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableHeadingConversion = value;
+                    await this.plugin.saveSettings();
+                }))
+            .addDropdown(dropdown => dropdown
+                .addOption('1', '一级标题')
+                .addOption('2', '二级标题')
+                .addOption('3', '三级标题')
+                .setValue(this.plugin.settings.headingConversionLevel || '1')
+                .onChange(async (value) => {
+                    this.plugin.settings.headingConversionLevel = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // ... 添加更多详细的设置选项 ...
 
         // 高级设置
         containerEl.createEl('h3', { text: '高级设置' });
@@ -668,7 +726,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // ... 其他高级设置 ...
+        // ... 其他设置保持不变 ...
 
         // 导入/导出设置
         containerEl.createEl('h3', { text: '导入/导出设置' });
