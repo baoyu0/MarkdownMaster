@@ -7,6 +7,16 @@ declare module 'obsidian' {
     interface Vault {
         on(name: string, callback: (file: TFile) => any, ctx?: any): EventRef;
     }
+
+    interface Setting {
+        addDropdown(cb: (dropdown: DropdownComponent) => any): Setting;
+    }
+
+    interface DropdownComponent {
+        addOption(value: string, display: string): DropdownComponent;
+        setValue(value: string): DropdownComponent;
+        onChange(cb: (value: string) => any): DropdownComponent;
+    }
 }
 
 interface MarkdownMasterSettings {
@@ -23,6 +33,7 @@ interface MarkdownMasterSettings {
     enableTitleNumbering: boolean;
     language: string;
     autoFormatOnSave: boolean;
+    formatTemplate: string;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -39,6 +50,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     enableTitleNumbering: true,
     language: 'en',
     autoFormatOnSave: false,
+    formatTemplate: 'none',
 }
 
 // 更新插件版本号
@@ -125,6 +137,65 @@ export default class MarkdownMasterPlugin extends Plugin {
         await this.saveData(this.settings);
     }
 
+    // 1. 处理大文件的方法
+    private async processLargeFile(content: string, chunkSize: number = 10000): Promise<string> {
+        const chunks = [];
+        for (let i = 0; i < content.length; i += chunkSize) {
+            chunks.push(content.slice(i, i + chunkSize));
+        }
+
+        let formattedContent = '';
+        for (const chunk of chunks) {
+            formattedContent += this.applyFormatting(chunk);
+            // 允许其他任务执行
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
+
+        return formattedContent;
+    }
+
+    // 2. 改进错误处理
+    private handleError(error: unknown, context: string): void {
+        console.error(`Error in ${context}:`, error);
+        let errorMessage = '发生未知错误';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        }
+        new Notice(`${context}出错: ${errorMessage}`);
+    }
+
+    // 3. 增强的文本统计方法
+    private getTextStatistics(content: string): {
+        wordCount: number;
+        charCount: number;
+        lineCount: number;
+        paragraphCount: number;
+        headingCount: number;
+        linkCount: number;
+        imageCount: number;
+    } {
+        const wordCount = content.split(/\s+/).length;
+        const charCount = content.length;
+        const lineCount = content.split('\n').length;
+        const paragraphCount = content.split(/\n\s*\n/).length;
+        const headingCount = (content.match(/^#+\s/gm) || []).length;
+        const linkCount = (content.match(/\[([^\]]+)\]\(([^)]+)\)/g) || []).length;
+        const imageCount = (content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || []).length;
+
+        return {
+            wordCount,
+            charCount,
+            lineCount,
+            paragraphCount,
+            headingCount,
+            linkCount,
+            imageCount
+        };
+    }
+
+    // 修改 formatMarkdown 方法以使用新的功能
     async formatMarkdown(input: TFile | string): Promise<string> {
         try {
             let content: string;
@@ -133,27 +204,101 @@ export default class MarkdownMasterPlugin extends Plugin {
             } else {
                 content = await this.app.vault.read(input);
             }
-            const formattedContent = this.applyFormatting(content);
+
+            let formattedContent: string;
+            if (content.length > 50000) {
+                formattedContent = await this.processLargeFile(content);
+            } else {
+                formattedContent = this.applyFormatting(content);
+            }
+
             if (typeof input !== 'string') {
                 await this.app.vault.modify(input, formattedContent);
                 new Notice(this.getLang("formatSuccess"));
             }
+
+            // 添加文本统计
+            if (this.settings.enableTextStatistics) {
+                const stats = this.getTextStatistics(formattedContent);
+                console.log('文本统计:', stats);
+                // 可以在这里添加显示统计信息的逻辑
+            }
+
             return formattedContent;
         } catch (error) {
-            console.error("格式化文档时出错:", error);
-            new Notice(this.getLang("formatError"));
-            // 添加更详细的错误日志
-            console.error("错误详情:", {
-                input: typeof input !== 'string' ? input.path : "string input",
-                error: error instanceof Error ? error.message : String(error)
-            });
+            this.handleError(error, '格式化文档');
             return typeof input === 'string' ? input : await this.app.vault.read(input);
         }
     }
 
     private applyFormatting(content: string): string {
-        // 实现格式化逻辑
-        return content; // 临时返回，需要实现实际的格式化逻辑
+        let formattedContent = content;
+
+        // 应用选定的格式化模板
+        if (this.settings.formatTemplate && this.settings.formatTemplate !== 'none') {
+            formattedContent = this.applyFormatTemplate(formattedContent, this.settings.formatTemplate);
+        }
+
+        if (this.settings.enableLinkRemoval) {
+            formattedContent = this.removeCertainLinks(formattedContent);
+        }
+
+        if (this.settings.enableHeadingConversion) {
+            formattedContent = this.convertHeadings(formattedContent);
+        }
+
+        if (this.settings.enableBoldRemoval) {
+            formattedContent = this.removeBold(formattedContent);
+        }
+
+        if (this.settings.enableReferenceRemoval) {
+            formattedContent = this.removeReferences(formattedContent);
+        }
+
+        if (this.settings.enableTableFormat) {
+            formattedContent = this.formatTables(formattedContent);
+        }
+
+        if (this.settings.enableCodeHighlight) {
+            formattedContent = this.highlightCodeBlocks(formattedContent);
+        }
+
+        if (this.settings.enableImageOptimization) {
+            formattedContent = this.optimizeImageLinks(formattedContent);
+        }
+
+        if (this.settings.enableTitleNumbering) {
+            formattedContent = this.optimizeTitleNumbering(formattedContent);
+        }
+
+        // 应用自定义正则表达式规则
+        this.settings.customRegexRules.forEach(rule => {
+            const regex = new RegExp(rule.pattern, 'g');
+            formattedContent = formattedContent.replace(regex, rule.replacement);
+        });
+
+        return formattedContent;
+    }
+
+    // 新增的辅助方法
+    private removeCertainLinks(content: string): string {
+        return content.replace(/\[\d+\]\s*http:\/\/[^\s]+/g, '');
+    }
+
+    private convertHeadings(content: string): string {
+        return content.replace(/^##\s/gm, '# ');
+    }
+
+    private removeBold(content: string): string {
+        return content.replace(/\*\*(.*?)\*\*/g, '$1');
+    }
+
+    private removeReferences(content: string): string {
+        return content.replace(/\[\d+\]/g, '');
+    }
+
+    private optimizeTitleNumbering(content: string): string {
+        return content.replace(/^(#+)\s*\d+[\.\d]*\s+/gm, '$1 ');
     }
 
     showFormatOptions() {
@@ -276,6 +421,49 @@ export default class MarkdownMasterPlugin extends Plugin {
     getLang(key: string): string {
         const lang = this.settings.language || "en";
         return (LangModule.LANG as any)[lang]?.[key] || (LangModule.LANG as any).en[key] || key;
+    }
+
+    // 导出设置
+    exportSettings(): string {
+        return JSON.stringify(this.settings, null, 2);
+    }
+
+    // 导入设置
+    async importSettings(settingsJson: string): Promise<void> {
+        try {
+            const newSettings = JSON.parse(settingsJson);
+            this.settings = { ...DEFAULT_SETTINGS, ...newSettings };
+            await this.saveSettings();
+            new Notice('设置已成功导入');
+        } catch (error) {
+            this.handleError(error, '导入设置');
+        }
+    }
+
+    // 格式化模板
+    private formatTemplates: { [key: string]: (content: string) => string } = {
+        'academic': (content: string) => {
+            // 学术论文格式化逻辑
+            content = content.replace(/^#\s/gm, '# ');  // 确保一级标题格式正确
+            content = content.replace(/^##\s/gm, '## '); // 确保二级标题格式正确
+            content = content.replace(/(\d+)\./g, '$1\\.'); // 修复编号后的句点
+            return content;
+        },
+        'blog': (content: string) => {
+            // 博客文章格式化逻辑
+            content = content.replace(/^#\s/gm, '# ');  // 确保标题格式正确
+            content = content.replace(/!\[(.*?)\]\((.*?)\)/g, '![$1]($2)\n'); // 图片单独一行
+            return content;
+        },
+        // 可以添加更多模板...
+    };
+
+    applyFormatTemplate(content: string, templateName: string): string {
+        const template = this.formatTemplates[templateName];
+        if (template) {
+            return template(content);
+        }
+        return content; // 如果模板不存在，返回原内容
     }
 }
 
@@ -544,5 +732,59 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.plugin.settings.enableTitleNumbering = value;
                     await this.plugin.saveSettings();
                 }));
+
+        new Setting(containerEl)
+            .setName('导出设置')
+            .setDesc('将当前设置导出为 JSON 文件')
+            .addButton(button => button
+                .setButtonText('导出')
+                .onClick(() => {
+                    const settingsJson = this.plugin.exportSettings();
+                    const blob = new Blob([settingsJson], { type: 'application/json' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'markdown-master-settings.json';
+                    a.click();
+                }));
+
+        new Setting(containerEl)
+            .setName('导入设置')
+            .setDesc('从 JSON 文件导入设置')
+            .addButton(button => button
+                .setButtonText('导入')
+                .onClick(() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'application/json';
+                    input.onchange = async (e: Event) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = async (e) => {
+                                const content = e.target?.result as string;
+                                await this.plugin.importSettings(content);
+                                this.display(); // 刷新设置页面
+                            };
+                            reader.readAsText(file);
+                        }
+                    };
+                    input.click();
+                }));
+
+        new Setting(containerEl)
+            .setName('格式化模板')
+            .setDesc('选择预定义的格式化模板')
+            .addDropdown((dropdown) => {
+                dropdown
+                    .addOption('none', '无')
+                    .addOption('academic', '学术论文')
+                    .addOption('blog', '博客文章')
+                    // 可以添加更多模板选项
+                    .setValue(this.plugin.settings.formatTemplate || 'none')
+                    .onChange(async (value) => {
+                        this.plugin.settings.formatTemplate = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
     }
 }
