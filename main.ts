@@ -233,7 +233,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
     }
 
-    private applyFormatting(content: string): string {
+    public applyFormatting(content: string): string {
         let formattedContent = content;
 
         if (this.settings.formatTemplate && this.settings.formatTemplate !== 'none') {
@@ -313,14 +313,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         const content = activeView.editor.getValue();
         this.formatMarkdown(content).then(formattedContent => {
-            new FormatPreviewModal(this.app, content, formattedContent, (result) => {
-                if (result) {
-                    this.lastContent = content;
-                    activeView.editor.setValue(formattedContent);
-                    new Notice('Markdown文件已格式化');
-                    this.formatHistory.addToHistory(content);
-                }
-            }).open();
+            new FormatPreviewModal(this.app, this, content, formattedContent).open();
         });
     }
 
@@ -490,19 +483,22 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
 
         const content = activeView.editor.getValue();
-        new FormatPreviewModal(this.app, this, content).open();
+        const formattedContent = this.applyFormatting(content);
+        new FormatPreviewModal(this.app, this, content, formattedContent).open();
     }
 }
 
 
 class FormatPreviewModal extends Modal {
     private originalContent: string;
+    private formattedContent: string;
     private plugin: MarkdownMasterPlugin;
 
-    constructor(app: App, plugin: MarkdownMasterPlugin, originalContent: string) {
+    constructor(app: App, plugin: MarkdownMasterPlugin, originalContent: string, formattedContent: string) {
         super(app);
         this.plugin = plugin;
         this.originalContent = originalContent;
+        this.formattedContent = formattedContent;
     }
 
     onOpen() {
@@ -510,12 +506,12 @@ class FormatPreviewModal extends Modal {
         contentEl.empty();
         contentEl.createEl('h2', { text: '格式化预览' });
 
-        const originalTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' });
+        const originalTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
         originalTextArea.value = this.originalContent;
         originalTextArea.readOnly = true;
 
-        const formattedTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' });
-        formattedTextArea.value = this.plugin.applyFormatting(this.originalContent);
+        const formattedTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
+        formattedTextArea.value = this.formattedContent;
         formattedTextArea.readOnly = true;
 
         new Setting(contentEl)
