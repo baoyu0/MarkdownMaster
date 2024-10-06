@@ -1,6 +1,8 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import fs from "fs";
+import path from "path";
 
 const banner =
     `/*
@@ -10,8 +12,9 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === 'production');
+const test = (process.argv[2] === 'test');
 
-esbuild.build({
+const config = {
     banner: {
         js: banner,
     },
@@ -38,5 +41,22 @@ esbuild.build({
     logLevel: "info",
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
-    outfile: 'main.js',
-}).catch(() => process.exit(1));
+    outfile: test ? 'test-build/main.js' : 'main.js',
+};
+
+if (test) {
+    config.plugins = [{
+        name: 'copy-plugin',
+        setup(build) {
+            build.onEnd(() => {
+                const filesToCopy = ['manifest.json', 'styles.css'];
+                filesToCopy.forEach(file => {
+                    fs.copyFileSync(file, path.join('test-build', file));
+                });
+                console.log('Additional files copied to test-build directory');
+            });
+        }
+    }];
+}
+
+esbuild.build(config).catch(() => process.exit(1));

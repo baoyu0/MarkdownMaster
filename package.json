@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
+    "build-test": "node esbuild.config.mjs test",
     "update-version": "node update-version.js",
     "release": "node release.js"
   },
