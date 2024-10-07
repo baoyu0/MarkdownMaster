@@ -27,6 +27,14 @@ declare module 'obsidian' {
         setDynamicTooltip(): this;
         onChange(callback: (value: number) => void): this;
     }
+
+    interface TextAreaComponent extends HTMLElement {
+        value: string;
+        setValue: (value: string) => this;
+        getValue: () => string;
+        onChange: (callback: (value: string) => void) => this;
+        inputEl: HTMLTextAreaElement;
+    }
 }
 
 
@@ -50,6 +58,10 @@ interface MarkdownMasterSettings {
     enableListFormatting: boolean;
     listBulletChar: '-' | '*' | '+';
     listIndentSpaces: number;
+    enableAutoTOC: boolean;
+    tocDepth: number;
+    enableFootnoteFormatting: boolean;
+    advancedCustomRules: { name: string; rule: string }[];
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -72,6 +84,10 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     enableListFormatting: true,
     listBulletChar: '-',
     listIndentSpaces: 2,
+    enableAutoTOC: false,
+    tocDepth: 3,
+    enableFootnoteFormatting: false,
+    advancedCustomRules: [],
 }
 
 
@@ -304,6 +320,16 @@ export default class MarkdownMasterPlugin extends Plugin {
             formattedContent = this.formatLists(formattedContent);
         }
 
+        if (this.settings.enableAutoTOC) {
+            formattedContent = this.generateTOC(formattedContent);
+        }
+
+        if (this.settings.enableFootnoteFormatting) {
+            formattedContent = this.formatFootnotes(formattedContent);
+        }
+
+        formattedContent = this.applyAdvancedCustomRules(formattedContent);
+
         return formattedContent;
     }
 
@@ -521,6 +547,73 @@ export default class MarkdownMasterPlugin extends Plugin {
             const newBullet = /^\d+\./.test(bullet) ? bullet : this.settings.listBulletChar;
             return `${newIndent}${newBullet} `;
         });
+    }
+
+    private generateTOC(content: string): string {
+        if (!this.settings.enableAutoTOC) return content;
+
+        const headingRegex = /^(#{1,6})\s+(.+)$/gm;
+        const toc = [];
+        let match;
+
+        while ((match = headingRegex.exec(content)) !== null) {
+            const level = match[1].length;
+            if (level <= this.settings.tocDepth) {
+                const title = match[2];
+                const slug = this.slugify(title);
+                toc.push(`${'  '.repeat(level - 1)}- [${title}](#${slug})`);
+            }
+        }
+
+        if (toc.length > 0) {
+            const tocContent = "## 目录\n\n" + toc.join('\n');
+            return tocContent + '\n\n' + content;
+        }
+
+        return content;
+    }
+
+    private slugify(text: string): string {
+        return text.toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w\-]+/g, '')
+            .replace(/\-\-+/g, '-')
+            .replace(/^-+/, '')
+            .replace(/-+$/, '');
+    }
+
+    private formatFootnotes(content: string): string {
+        if (!this.settings.enableFootnoteFormatting) return content;
+
+        const footnoteRegex = /\[\^(\d+)\](?!:)/g;
+        const footnoteDefRegex = /\[\^(\d+)\]:/g;
+        let footnoteCounter = 1;
+        const footnoteMap = new Map();
+
+        content = content.replace(footnoteRegex, (match, p1) => {
+            if (!footnoteMap.has(p1)) {
+                footnoteMap.set(p1, footnoteCounter++);
+            }
+            return `[^${footnoteMap.get(p1)}]`;
+        });
+
+        content = content.replace(footnoteDefRegex, (match, p1) => {
+            return `[^${footnoteMap.get(p1) || p1}]:`;
+        });
+
+        return content;
+    }
+
+    private applyAdvancedCustomRules(content: string): string {
+        for (const rule of this.settings.advancedCustomRules) {
+            try {
+                const ruleFunction = new Function('content', rule.rule);
+                content = ruleFunction(content);
+            } catch (error) {
+                console.error(`Error applying custom rule "${rule.name}":`, error);
+            }
+        }
+        return content;
     }
 }
 
@@ -827,5 +920,119 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.plugin.settings.listIndentSpaces = value;
                     await this.plugin.saveSettings();
                 }));
+
+        new Setting(containerEl)
+            .setName('启用自动生成目录')
+            .setDesc('在文档开头自动生成目录')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableAutoTOC)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableAutoTOC = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('目录深度')
+            .setDesc('设置目录包含的标题级别')
+            .addSlider(slider => slider
+                .setLimits(1, 6, 1)
+                .setValue(this.plugin.settings.tocDepth)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.tocDepth = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用脚注格式化')
+            .setDesc('重新编号和格式化脚注')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableFootnoteFormatting)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableFootnoteFormatting = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('高级自定义规则')
+            .setDesc('添加复杂的自定义格式化规则（JavaScript 函数）')
+            .addButton(button => button
+                .setButtonText('添加规则')
+                .onClick(() => {
+                    const modal = new CustomRuleModal(this.app, (name, rule) => {
+                        this.plugin.settings.advancedCustomRules.push({ name, rule });
+                        this.plugin.saveSettings();
+                        this.display();
+                    });
+                    modal.open();
+                }));
+
+        // 显示现有的高级自定义规则
+        this.plugin.settings.advancedCustomRules.forEach((rule, index) => {
+            new Setting(containerEl)
+                .setName(`规则 ${index + 1}: ${rule.name}`)
+                .addButton(button => button
+                    .setButtonText('删除')
+                    .onClick(async () => {
+                        this.plugin.settings.advancedCustomRules.splice(index, 1);
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }));
+        });
+    }
+}
+
+class CustomRuleModal extends Modal {
+    private onSubmit: (name: string, rule: string) => void;
+    private nameInputEl: HTMLElement; // 修改这里
+    private ruleInputEl: HTMLTextAreaElement;
+
+    constructor(app: App, onSubmit: (name: string, rule: string) => void) {
+        super(app);
+        this.onSubmit = onSubmit;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl('h2', { text: '添加高级自定义规则' });
+
+        new Setting(contentEl)
+            .setName('规则名称')
+            .addText(text => {
+                this.nameInputEl = text.inputEl; // 修改这里，移除类型断言
+            });
+
+        new Setting(contentEl)
+            .setName('规则内容 (JavaScript 函数)')
+            .setDesc('函数应接受 content 参数并返回处理后的内容')
+            .addTextArea(text => {
+                this.ruleInputEl = text.inputEl;
+                this.ruleInputEl.rows = 10;
+                this.ruleInputEl.cols = 50;
+            });
+
+        new Setting(contentEl)
+            .addButton(btn => btn
+                .setButtonText('保存')
+                .setCta()
+                .onClick(() => {
+                    const name = (this.nameInputEl as HTMLInputElement).value; // 在这里使用类型断言
+                    const rule = this.ruleInputEl.value;
+                    if (name && rule) {
+                        this.onSubmit(name, rule);
+                        this.close();
+                    } else {
+                        new Notice('请填写规则名称和内容');
+                    }
+                }))
+            .addButton(btn => btn
+                .setButtonText('取消')
+                .onClick(() => this.close()));
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
     }
 }
