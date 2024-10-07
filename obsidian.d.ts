@@ -102,6 +102,7 @@ declare module "obsidian" {
         createSpan(): HTMLElement;
         style: CSSStyleDeclaration;  // 添加这一行
         textContent: string;  // 添加这一行
+        className: string;  // 添加这一行
     }
 
     export type Constructor<T> = new (...args: any[]) => T;

@@ -363,9 +363,8 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
 
         const content = activeView.editor.getValue();
-        this.formatMarkdown(content).then(formattedContent => {
-            new FormatPreviewModal(this.app, this, content, formattedContent).open();
-        });
+        const formattedContent = this.applyFormatting(content);
+        new FormatPreviewModal(this.app, this, content, formattedContent).open();
     }
 
     undoFormat() {
@@ -635,13 +634,18 @@ class FormatPreviewModal extends Modal {
         contentEl.empty();
         contentEl.createEl('h2', { text: '格式化预览' });
 
-        const originalTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
-        originalTextArea.value = this.originalContent;
-        originalTextArea.readOnly = true;
+        const diffContainer = contentEl.createDiv({ cls: 'markdown-master-diff' });
+        const diff = diffChars(this.originalContent, this.formattedContent);
 
-        const formattedTextArea = contentEl.createEl('textarea', { cls: 'markdown-master-textarea' }) as unknown as HTMLTextAreaElement;
-        formattedTextArea.value = this.formattedContent;
-        formattedTextArea.readOnly = true;
+        diff.forEach((part: Change) => {
+            const span = diffContainer.createSpan();
+            span.textContent = part.value;
+            if (part.added) {
+                span.className = 'added';
+            } else if (part.removed) {
+                span.className = 'removed';
+            }
+        });
 
         new Setting(contentEl)
             .addButton(btn => btn

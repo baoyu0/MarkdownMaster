@@ -8,7 +8,7 @@
 .markdown-master-textarea {
     width: 100%;
     height: 200px;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: var(--font-monospace);
     font-size: 14px;
     line-height: 1.6;
     padding: 10px;
@@ -55,7 +55,7 @@
 }
 
 .markdown-master-diff {
-    font-family: 'Courier New', Courier, monospace;
+    font-family: var(--font-monospace);
     white-space: pre-wrap;
     word-wrap: break-word;
     padding: 10px;
@@ -63,8 +63,20 @@
     border-radius: 5px;
     background-color: var(--background-primary);
     margin-bottom: 20px;
+    overflow-x: auto;
 }
 
 .markdown-master-diff span {
     display: inline;
+}
+
+.markdown-master-diff .added {
+    background-color: var(--text-highlight-bg);
+    color: var(--text-normal);
+}
+
+.markdown-master-diff .removed {
+    background-color: var(--text-error-bg);
+    color: var(--text-normal);
+    text-decoration: line-through;
 }
