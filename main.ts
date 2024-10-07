@@ -982,9 +982,14 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
     }
 }
 
+// 在文件顶部添加这个辅助函数
+function setInnerHTML(element: HTMLElement, html: string) {
+    element.innerHTML = html;
+}
+
 class CustomRuleModal extends Modal {
     private onSubmit: (name: string, rule: string) => void;
-    private nameInputEl: HTMLElement; // 修改这里
+    private nameInputEl: HTMLElement;
     private ruleInputEl: HTMLTextAreaElement;
 
     constructor(app: App, onSubmit: (name: string, rule: string) => void) {
@@ -997,10 +1002,17 @@ class CustomRuleModal extends Modal {
         contentEl.empty();
         contentEl.createEl('h2', { text: '添加高级自定义规则' });
 
+        // 添加帮助文本
+        const helpText = contentEl.createEl('p', { 
+            text: '高级自定义规则允许您使用 JavaScript 函数来处理 Markdown 内容。这些规则会在其他格式化操作之后应用。',
+            cls: 'markdown-master-help-text'
+        });
+
         new Setting(contentEl)
             .setName('规则名称')
+            .setDesc('为您的规则起一个描述性的名称')
             .addText(text => {
-                this.nameInputEl = text.inputEl; // 修改这里，移除类型断言
+                this.nameInputEl = text.inputEl;
             });
 
         new Setting(contentEl)
@@ -1010,14 +1022,35 @@ class CustomRuleModal extends Modal {
                 this.ruleInputEl = text.inputEl;
                 this.ruleInputEl.rows = 10;
                 this.ruleInputEl.cols = 50;
+                this.ruleInputEl.placeholder = `// 示例函数
+function (content) {
+    // 在这里编写您的处理逻辑
+    // 例如：将所有大写单词转换为小写
+    return content.replace(/\b[A-Z]+\b/g, word => word.toLowerCase());
+}`;
             });
+
+        // 添加更多详细说明
+        const detailsEl = contentEl.createEl('details');
+        detailsEl.createEl('summary', { text: '查看更多说明' });
+        const detailsContent = detailsEl.createEl('div');
+        setInnerHTML(detailsContent as unknown as HTMLElement, `
+            <p>自定义规则使用说明：</p>
+            <ul>
+                <li>函数应该接受一个 content 参数，这是当前文档的全部内容。</li>
+                <li>函数应该返回处理后的内容。</li>
+                <li>您可以使用任何标准的 JavaScript 功能。</li>
+                <li>请注意，复杂的处理可能会影响性能。</li>
+                <li>规则会按照添加的顺序依次应用。</li>
+            </ul>
+        `);
 
         new Setting(contentEl)
             .addButton(btn => btn
                 .setButtonText('保存')
                 .setCta()
                 .onClick(() => {
-                    const name = (this.nameInputEl as HTMLInputElement).value; // 在这里使用类型断言
+                    const name = (this.nameInputEl as HTMLInputElement).value;
                     const rule = this.ruleInputEl.value;
                     if (name && rule) {
                         this.onSubmit(name, rule);
