@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace, PluginManifest } from 'obsidian';
 import { diffChars, Change } from 'diff';  // 导入 Change 类型
 
 // 添加这个类型别名
@@ -60,6 +60,12 @@ export default class MarkdownMasterPlugin extends Plugin {
     private fileOpenRef: EventRef | null = null;
     private lastUnformattedContent: string = '';
     private formatHistory: FormatHistory;
+
+    constructor() {
+        super();
+        this.settings = DEFAULT_SETTINGS;
+        this.formatHistory = new FormatHistory();
+    }
 
     async onload() {
         await this.loadSettings();
@@ -139,51 +145,49 @@ export default class MarkdownMasterPlugin extends Plugin {
                 content = await this.app.vault.read(input);
             }
 
-            let formattedContent: string;
-            if (content.length > 50000) {
-                formattedContent = await this.processLargeFile(content);
-            } else {
-                formattedContent = this.applyFormatting(content);
-            }
+            // 格式化标题
+            content = content.replace(/^(#+)\s*(.+)$/gm, '$1 $2');
+
+            content = this.applyFormatting(content);
 
             this.lastUnformattedContent = content; // 保存格式化前的内容
 
             // 应用格式化模板
-            formattedContent = this.applyFormatTemplate(formattedContent);
+            content = this.applyFormatTemplate(content);
 
             // 标题转换
             if (this.settings.enableHeadingConversion) {
-                formattedContent = this.convertHeadings(formattedContent);
+                content = this.convertHeadings(content);
             }
 
             // 列表格式化
             if (this.settings.enableListFormatting) {
-                formattedContent = this.formatLists(formattedContent);
+                content = this.formatLists(content);
             }
 
             // 链接处理
             if (this.settings.enableLinkCleaning) {
-                formattedContent = this.cleanLinks(formattedContent);
+                content = this.cleanLinks(content);
             }
             if (this.settings.unifyLinkStyle) {
-                formattedContent = this.unifyLinks(formattedContent);
+                content = this.unifyLinks(content);
             }
 
             // 符号删除
             if (this.settings.enableSymbolDeletion) {
-                formattedContent = this.deleteSymbols(formattedContent);
+                content = this.deleteSymbols(content);
             }
 
             // 应用自定义正则表达式规则
-            formattedContent = this.applyCustomRegexRules(formattedContent);
+            content = this.applyCustomRegexRules(content);
 
             if (typeof input !== 'string') {
-                await this.app.vault.modify(input, formattedContent);
+                await this.app.vault.modify(input, content);
                 new Notice('文档已格式化');
             }
 
-            this.formatHistory.addToHistory(formattedContent);
-            return formattedContent;
+            this.formatHistory.addToHistory(content);
+            return content;
         } catch (error) {
             this.handleError(error, '格式化文档');
             return typeof input === 'string' ? input : await this.app.vault.read(input);
@@ -379,7 +383,8 @@ export default class MarkdownMasterPlugin extends Plugin {
         new Notice(`已格式化 ${formattedCount} 个文件`);
     }
 
-    private formatTables(content: string): string {
+    // 将 formatTables 方法改为公共方法，以便测试
+    public formatTables(content: string): string {
         const tableRegex = /\|(.+)\|/g;
         return content.replace(tableRegex, (match) => {
             const cells = match.split('|').map(cell => cell.trim());
@@ -446,19 +451,24 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private applyFormatting(content: string): string {
-        // ... 其他格式化逻辑 ...
-
         if (this.settings.enableTableFormat) {
             content = this.formatTables(content);
         }
-
         if (this.settings.enableCodeHighlight) {
             content = this.formatCodeBlocks(content);
         }
-
-        // ... 其他格式化逻辑 ...
-
+        // 添加其他格式化逻辑...
         return content;
+    }
+
+    // 添加 standardizeLists 方法
+    public standardizeLists(content: string): string {
+        const listRegex = /^(\s*)([*+-]|\d+\.)\s+/gm;
+        return content.replace(listRegex, (match, indent, bullet) => {
+            const newIndent = ' '.repeat(Math.floor(indent.length / this.settings.listIndentSpaces) * this.settings.listIndentSpaces);
+            const newBullet = /^\d+\./.test(bullet) ? bullet : this.settings.listBulletChar;
+            return `${newIndent}${newBullet} `;
+        });
     }
 }
 

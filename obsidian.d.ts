@@ -131,6 +131,17 @@ declare module "obsidian" {
         setValue(value: string): this;
         onChange(callback: (value: string) => any): this;
     }
+
+    export interface PluginManifest {
+        id: string;
+        name: string;
+        version: string;
+        minAppVersion: string;
+        description: string;
+        author: string;
+        authorUrl?: string;
+        isDesktopOnly?: boolean;
+    }
 }
 
 export * from "obsidian";

@@ -6,7 +6,7 @@ const path = require('path');
 const newVersion = process.argv[2];
 
 if (!newVersion) {
-    console.error('请提供新的版本号，例如: npm run release 1.2.9');
+    console.error('请提供新的版本号，例如: npm run release 1.5.6');
     process.exit(1);
 }
 
@@ -17,20 +17,9 @@ if (!/^\d+\.\d+\.\d+$/.test(newVersion)) {
 }
 
 try {
-    // 检查工作目录是否干净
-    const status = execSync('git status --porcelain').toString().trim();
-    if (status) {
-        console.error('工作目录不干净。请提交或存储您的更改后再运行此脚本。');
-        process.exit(1);
-    }
-
     // 更新 package.json
     const packageJsonPath = path.join(__dirname, 'package.json');
     const packageJson = require(packageJsonPath);
-    if (packageJson.version === newVersion) {
-        console.error(`package.json 中的版本号已经是 ${newVersion}`);
-        process.exit(1);
-    }
     packageJson.version = newVersion;
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
     console.log(`已更新 package.json 版本号为 ${newVersion}`);
@@ -57,13 +46,10 @@ try {
     // Git 操作
     console.log('执行 Git 操作...');
     execSync('git add .', { stdio: 'inherit' });
-    console.log('Git add 完成');
     execSync(`git commit -m "Bump version to ${newVersion}"`, { stdio: 'inherit' });
-    console.log('Git commit 完成');
     execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
-    console.log('Git tag 完成');
     execSync('git push && git push --tags', { stdio: 'inherit' });
-    console.log('Git push 完成');
+    console.log('Git 操作完成');
 
     console.log(`版本 ${newVersion} 已成功发布！`);
 } catch (error) {
