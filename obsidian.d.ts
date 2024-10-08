@@ -11,6 +11,7 @@ declare module "obsidian" {
         on(name: 'file-open', callback: (file: TFile) => any, ctx?: any): EventRef;
         offref(ref: EventRef): void;
         on(name: 'layout-ready', callback: () => any, ctx?: any): EventRef;
+        onLayoutReady(callback: () => void): void;  // 添加这一行
     }
 
     export class Plugin {
