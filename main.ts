@@ -61,8 +61,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     private lastUnformattedContent: string = '';
     private formatHistory: FormatHistory;
 
-    constructor() {
-        super();
+    constructor(app: App, manifest: PluginManifest) {
+        super(app, manifest);
         this.settings = DEFAULT_SETTINGS;
         this.formatHistory = new FormatHistory();
     }
@@ -71,27 +71,18 @@ export default class MarkdownMasterPlugin extends Plugin {
         console.log('Loading MarkdownMaster plugin');
 
         try {
-            // 添加一个短暂的延迟，等待 app 和 vault 初始化
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
+            // 移除延迟，直接检查 app 和 vault
             if (!this.app || !this.app.vault) {
                 throw new Error('App or vault is not initialized');
             }
 
             // 初始化 settings
-            this.settings = Object.assign({}, DEFAULT_SETTINGS);
-            await this.loadSettings();
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
-            this.formatHistory = new FormatHistory();
+            // 初始化插件
+            this.initializePlugin();
 
-            if (this.app.workspace && typeof this.app.workspace.onLayoutReady === 'function') {
-                this.app.workspace.onLayoutReady(() => {
-                    this.initializePlugin();
-                });
-            } else {
-                console.warn('Workspace or onLayoutReady is not available, initializing plugin immediately');
-                this.initializePlugin();
-            }
+            console.log('MarkdownMaster plugin loaded successfully');
         } catch (error) {
             console.error('Error in MarkdownMaster onload:', error);
             new Notice('MarkdownMaster plugin failed to load. Check console for details.');
@@ -99,49 +90,26 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private initializePlugin() {
-        try {
-            this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
-                this.showFormatOptions();
-            });
+        this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
+            this.showFormatOptions();
+        });
 
-            this.addCommand({
-                id: 'format-markdown',
-                name: '格式化当前Markdown文件',
-                callback: () => this.showFormatOptions()
-            });
+        this.addCommand({
+            id: 'format-markdown',
+            name: '格式化当前Markdown文件',
+            callback: () => this.showFormatOptions()
+        });
 
-            this.addCommand({
-                id: 'undo-last-formatting',
-                name: '撤销上次格式化',
-                callback: () => this.undoLastFormatting()
-            });
+        // ... 其他命令和功能 ...
 
-            this.addCommand({
-                id: 'batch-format-markdown',
-                name: '批量格式化所有Markdown文件',
-                callback: () => this.batchFormat()
-            });
+        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
-            if (this.settings.enableAutoFormat) {
-                this.registerFileOpenEvent();
-            }
+        if (this.settings.enableAutoFormat) {
+            this.registerFileOpenEvent();
+        }
 
-            if (this.settings.autoFormatOnSave) {
-                this.registerFileSaveEvent();
-            }
-
-            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-
-            this.addCommand({
-                id: 'show-format-history',
-                name: '显示格式化历史',
-                callback: () => this.showFormatHistory()
-            });
-
-            console.log('MarkdownMaster plugin loaded successfully');
-        } catch (error) {
-            console.error('Error initializing MarkdownMaster plugin:', error);
-            new Notice('Error initializing MarkdownMaster plugin. Check console for details.');
+        if (this.settings.autoFormatOnSave) {
+            this.registerFileSaveEvent();
         }
     }
 
@@ -524,6 +492,14 @@ export default class MarkdownMasterPlugin extends Plugin {
             return;
         }
         // 使用 this.app 或 this.app.vault 的代码
+    }
+
+    private loadCSS() {
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+            /* 在这里添加你的 CSS 样式 */
+        `;
+        document.head.appendChild(styleEl);
     }
 }
 
