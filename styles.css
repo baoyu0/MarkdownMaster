@@ -54,20 +54,39 @@
     margin-bottom: 10px;
 }
 
+.markdown-master-settings {
+    padding: 16px;
+}
+
+.markdown-master-settings h2 {
+    margin-bottom: 16px;
+}
+
+.markdown-master-settings h3 {
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+.setting-item {
+    margin-bottom: 16px;
+}
+
+.header-conversion {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+
 .markdown-master-diff {
     font-family: var(--font-monospace);
     white-space: pre-wrap;
     word-wrap: break-word;
-    padding: 10px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 5px;
-    background-color: var(--background-primary);
-    margin-bottom: 20px;
-    overflow-x: auto;
-}
-
-.markdown-master-diff span {
-    display: inline;
+    padding: 10px;
+    margin-top: 16px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .markdown-master-diff .added {
@@ -79,4 +98,24 @@
     background-color: var(--text-error-bg);
     color: var(--text-normal);
     text-decoration: line-through;
+}
+
+/* 适配 Obsidian 的深色模式 */
+.theme-dark .markdown-master-diff .added {
+    background-color: rgba(0, 255, 0, 0.1);
+}
+
+.theme-dark .markdown-master-diff .removed {
+    background-color: rgba(255, 0, 0, 0.1);
+}
+
+.markdown-master-history-item {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.markdown-master-history-item:hover {
+    background-color: var(--background-secondary);
 }

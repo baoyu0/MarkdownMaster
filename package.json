@@ -1,15 +1,12 @@
 {
   "name": "markdown-master",
-  "version": "1.5.5",
-  "description": "Markdown Master 是一个为 Obsidian 设计的插件，旨在提供一键式 Markdown 文件格式化功能。",
+  "version": "1.6.0",
+  "description": "一键格式化Markdown文件，提供自定义规则、标题转换、列表格式化、链接处理等多种功能",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "node esbuild.config.mjs production",
-    "build-test": "node esbuild.config.mjs test",
-    "update-version": "node update-version.js",
-    "release": "node release.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [
     "obsidian",
@@ -17,17 +14,19 @@
     "markdown",
     "formatter"
   ],
-  "author": "dandan",
+  "author": "Your Name",
   "license": "MIT",
-  "dependencies": {
-    "diff": "^5.2.0",
-    "tslib": "^2.7.0"
-  },
   "devDependencies": {
-    "@types/diff": "^5.2.2",
+    "@types/node": "^16.11.6",
+    "@typescript-eslint/eslint-plugin": "^5.2.0",
+    "@typescript-eslint/parser": "^5.2.0",
     "builtin-modules": "^3.2.0",
-    "esbuild": "^0.14.47",
+    "esbuild": "0.13.12",
     "obsidian": "latest",
-    "typescript": "4.7.4"
+    "tslib": "2.3.1",
+    "typescript": "4.4.4"
+  },
+  "dependencies": {
+    "diff": "^5.1.0"
   }
 }

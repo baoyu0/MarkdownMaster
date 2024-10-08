@@ -9,6 +9,7 @@ declare module "obsidian" {
     export interface Workspace {
         getActiveViewOfType<T extends View>(type: Constructor<T>): T | null;
         on(name: 'file-open', callback: (file: TFile) => any, ctx?: any): EventRef;
+        offref(ref: EventRef): void;
     }
 
     export class Plugin {
@@ -59,6 +60,7 @@ declare module "obsidian" {
         addButton(cb: (button: ButtonComponent) => any): this;
         addToggle(cb: (toggle: ToggleComponent) => any): this;
         addTextArea(cb: (text: TextAreaComponent) => any): this;
+        addDropdown(cb: (dropdown: DropdownComponent) => any): this; // 添加这一行
     }
 
     export interface ButtonComponent {
@@ -111,6 +113,7 @@ declare module "obsidian" {
         getMarkdownFiles(): TFile[];
         read(file: TFile): Promise<string>;
         modify(file: TFile, data: string): Promise<void>;
+        on(name: string, callback: (file: TFile) => any, ctx?: any): EventRef;
     }
 
     export interface TFile {
@@ -120,6 +123,14 @@ declare module "obsidian" {
     }
 
     export type EventRef = any;
+
+    export interface DropdownComponent {
+        addOption(value: string, display: string): this;
+        addOptions(options: Record<string, string>): this;
+        getValue(): string;
+        setValue(value: string): this;
+        onChange(callback: (value: string) => any): this;
+    }
 }
 
 export * from "obsidian";
