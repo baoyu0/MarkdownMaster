@@ -71,21 +71,19 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        // 添加一个更长的延迟，等待 app 和 vault 初始化
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        if (!this.app || !this.app.vault) {
-            console.error('App or vault is not initialized');
-            return;
-        }
-
         // 初始化 settings
         this.settings = Object.assign({}, DEFAULT_SETTINGS);
         await this.loadSettings();
 
         this.formatHistory = new FormatHistory();
 
-        // 使用 try-catch 包裹可能出错的操作
+        // 使用 app.workspace.onLayoutReady 来确保 app 和 vault 已经初始化
+        this.app.workspace.onLayoutReady(() => {
+            this.initializePlugin();
+        });
+    }
+
+    private initializePlugin() {
         try {
             this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
                 this.showFormatOptions();
@@ -110,23 +108,11 @@ export default class MarkdownMasterPlugin extends Plugin {
             });
 
             if (this.settings.enableAutoFormat) {
-                this.fileOpenRef = this.registerEvent(
-                    this.app.workspace.on('file-open', (file: TFile) => {
-                        if (file && file.extension === 'md') {
-                            this.autoFormatFile(file);
-                        }
-                    })
-                );
+                this.registerFileOpenEvent();
             }
 
             if (this.settings.autoFormatOnSave) {
-                this.registerEvent(
-                    (this.app.vault as Vault).on('modify', (file: TFile) => {
-                        if (file.extension === 'md') {
-                            this.formatMarkdown(file);
-                        }
-                    })
-                );
+                this.registerFileSaveEvent();
             }
 
             this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
@@ -141,6 +127,26 @@ export default class MarkdownMasterPlugin extends Plugin {
         } catch (error) {
             console.error('Error initializing MarkdownMaster plugin:', error);
         }
+    }
+
+    private registerFileOpenEvent() {
+        this.fileOpenRef = this.registerEvent(
+            this.app.workspace.on('file-open', (file: TFile) => {
+                if (file && file.extension === 'md') {
+                    this.autoFormatFile(file);
+                }
+            })
+        );
+    }
+
+    private registerFileSaveEvent() {
+        this.registerEvent(
+            this.app.vault.on('modify', (file: TFile) => {
+                if (file.extension === 'md') {
+                    this.formatMarkdown(file);
+                }
+            })
+        );
     }
 
     onunload() {
@@ -494,14 +500,6 @@ export default class MarkdownMasterPlugin extends Plugin {
             const newBullet = /^\d+\./.test(bullet) ? bullet : this.settings.listBulletChar;
             return `${newIndent}${newBullet} `;
         });
-    }
-
-    private async loadCSS() {
-        if (!this.app || !this.app.vault) {
-            console.error('App or vault is not initialized');
-            return;
-        }
-        // 加载 CSS 的代码
     }
 }
 
