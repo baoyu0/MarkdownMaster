@@ -71,7 +71,9 @@ export default class MarkdownMasterPlugin extends Plugin {
         console.log('Loading MarkdownMaster plugin');
 
         try {
-            // 移除延迟，直接检查 app 和 vault
+            // 添加一个短暂的延迟，等待 app 和 vault 初始化
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
             if (!this.app || !this.app.vault) {
                 throw new Error('App or vault is not initialized');
             }
@@ -100,9 +102,17 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.showFormatOptions()
         });
 
-        // ... 其他命令和功能 ...
+        this.addCommand({
+            id: 'undo-last-formatting',
+            name: '撤销上次格式化',
+            callback: () => this.undoLastFormatting()
+        });
 
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+        this.addCommand({
+            id: 'batch-format-markdown',
+            name: '批量格式化所有Markdown文件',
+            callback: () => this.batchFormat()
+        });
 
         if (this.settings.enableAutoFormat) {
             this.registerFileOpenEvent();
@@ -111,6 +121,14 @@ export default class MarkdownMasterPlugin extends Plugin {
         if (this.settings.autoFormatOnSave) {
             this.registerFileSaveEvent();
         }
+
+        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+
+        this.addCommand({
+            id: 'show-format-history',
+            name: '显示格式化历史',
+            callback: () => this.showFormatHistory()
+        });
     }
 
     private registerFileOpenEvent() {
