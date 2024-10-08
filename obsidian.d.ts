@@ -10,6 +10,7 @@ declare module "obsidian" {
         getActiveViewOfType<T extends View>(type: Constructor<T>): T | null;
         on(name: 'file-open', callback: (file: TFile) => any, ctx?: any): EventRef;
         offref(ref: EventRef): void;
+        on(name: 'layout-ready', callback: () => any, ctx?: any): EventRef;
     }
 
     export class Plugin {

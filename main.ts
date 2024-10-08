@@ -71,16 +71,24 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        // 初始化 settings
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        if (!this.app || !this.app.vault) {
+            console.error('App or vault is not initialized');
+            return;
+        }
+
         this.settings = Object.assign({}, DEFAULT_SETTINGS);
         await this.loadSettings();
 
         this.formatHistory = new FormatHistory();
 
-        // 使用 app.workspace.onLayoutReady 来确保 app 和 vault 已经初始化
-        this.app.workspace.onLayoutReady(() => {
-            this.initializePlugin();
-        });
+        // 使用类型断言来避免类型错误
+        this.registerEvent(
+            this.app.workspace.on('layout-ready' as any, () => {
+                this.initializePlugin();
+            })
+        );
     }
 
     private initializePlugin() {
