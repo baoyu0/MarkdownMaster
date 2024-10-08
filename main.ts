@@ -70,32 +70,31 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        // 添加一个短暂的延迟，等待 app 和 vault 初始化
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        if (!this.app || !this.app.vault) {
-            console.error('App or vault is not initialized');
-            return;
-        }
-
-        // 初始化 settings
-        this.settings = Object.assign({}, DEFAULT_SETTINGS);
-        await this.loadSettings();
-
-        this.formatHistory = new FormatHistory();
-
-        // 使用 try-catch 包裹可能出错的操作
         try {
+            // 添加一个短暂的延迟，等待 app 和 vault 初始化
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            if (!this.app || !this.app.vault) {
+                throw new Error('App or vault is not initialized');
+            }
+
+            // 初始化 settings
+            this.settings = Object.assign({}, DEFAULT_SETTINGS);
+            await this.loadSettings();
+
+            this.formatHistory = new FormatHistory();
+
             if (this.app.workspace && typeof this.app.workspace.onLayoutReady === 'function') {
                 this.app.workspace.onLayoutReady(() => {
                     this.initializePlugin();
                 });
             } else {
-                console.error('Workspace or onLayoutReady is not available');
+                console.warn('Workspace or onLayoutReady is not available, initializing plugin immediately');
                 this.initializePlugin();
             }
         } catch (error) {
-            console.error('Error in onload:', error);
+            console.error('Error in MarkdownMaster onload:', error);
+            new Notice('MarkdownMaster plugin failed to load. Check console for details.');
         }
     }
 
@@ -139,9 +138,10 @@ export default class MarkdownMasterPlugin extends Plugin {
                 callback: () => this.showFormatHistory()
             });
 
-            console.log('MarkdownMaster plugin loaded');
+            console.log('MarkdownMaster plugin loaded successfully');
         } catch (error) {
             console.error('Error initializing MarkdownMaster plugin:', error);
+            new Notice('Error initializing MarkdownMaster plugin. Check console for details.');
         }
     }
 
