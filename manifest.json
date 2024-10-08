@@ -1,7 +1,7 @@
 {
   "id": "markdown-master",
   "name": "Markdown Master",
-  "version": "1.5.10",
+  "version": "1.5.11",
   "minAppVersion": "0.15.0",
   "description": "一键格式化Markdown文件，提供自定义规则、标题转换、列表格式化、链接处理等多种功能",
   "author": "Your Name",
