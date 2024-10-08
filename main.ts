@@ -71,8 +71,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        // 添加一个短暂的延迟，等待 app 和 vault 初始化
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // 添加一个更长的延迟，等待 app 和 vault 初始化
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         if (!this.app || !this.app.vault) {
             console.error('App or vault is not initialized');
@@ -496,12 +496,12 @@ export default class MarkdownMasterPlugin extends Plugin {
         });
     }
 
-    private async someMethod() {
+    private async loadCSS() {
         if (!this.app || !this.app.vault) {
             console.error('App or vault is not initialized');
             return;
         }
-        // 使用 this.app 或 this.app.vault 的代码
+        // 加载 CSS 的代码
     }
 }
 
