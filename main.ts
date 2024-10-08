@@ -1,4 +1,5 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace, PluginManifest } from 'obsidian';
+import { Plugin } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace, PluginManifest } from 'obsidian';
 import { diffChars, Change } from 'diff';  // 导入 Change 类型
 
 // 添加这个类型别名
@@ -68,58 +69,69 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async onload() {
-        await this.loadSettings();
+        try {
+            console.log('Loading MarkdownMaster plugin');
 
-        this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
-            this.showFormatOptions();
-        });
+            // 初始化 settings
+            this.settings = Object.assign({}, DEFAULT_SETTINGS);
+            await this.loadSettings();
 
-        this.addCommand({
-            id: 'format-markdown',
-            name: '格式化当前Markdown文件',
-            callback: () => this.showFormatOptions()
-        });
+            this.formatHistory = new FormatHistory();
 
-        this.addCommand({
-            id: 'undo-last-formatting',
-            name: '撤销上次格式化',
-            callback: () => this.undoLastFormatting()
-        });
+            this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
+                this.showFormatOptions();
+            });
 
-        this.addCommand({
-            id: 'batch-format-markdown',
-            name: '批量格式化所有Markdown文件',
-            callback: () => this.batchFormat()
-        });
+            this.addCommand({
+                id: 'format-markdown',
+                name: '格式化当前Markdown文件',
+                callback: () => this.showFormatOptions()
+            });
 
-        if (this.settings.enableAutoFormat) {
-            this.fileOpenRef = this.registerEvent(
-                this.app.workspace.on('file-open', (file: TFile) => {
-                    if (file && file.extension === 'md') {
-                        this.autoFormatFile(file);
-                    }
-                })
-            );
+            this.addCommand({
+                id: 'undo-last-formatting',
+                name: '撤销上次格式化',
+                callback: () => this.undoLastFormatting()
+            });
+
+            this.addCommand({
+                id: 'batch-format-markdown',
+                name: '批量格式化所有Markdown文件',
+                callback: () => this.batchFormat()
+            });
+
+            if (this.settings.enableAutoFormat) {
+                this.fileOpenRef = this.registerEvent(
+                    this.app.workspace.on('file-open', (file: TFile) => {
+                        if (file && file.extension === 'md') {
+                            this.autoFormatFile(file);
+                        }
+                    })
+                );
+            }
+
+            if (this.settings.autoFormatOnSave) {
+                this.registerEvent(
+                    (this.app.vault as Vault).on('modify', (file: TFile) => {
+                        if (file.extension === 'md') {
+                            this.formatMarkdown(file);
+                        }
+                    })
+                );
+            }
+
+            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+
+            this.addCommand({
+                id: 'show-format-history',
+                name: '显示格式化历史',
+                callback: () => this.showFormatHistory()
+            });
+
+            console.log('MarkdownMaster plugin loaded');
+        } catch (error) {
+            console.error('Error loading MarkdownMaster plugin:', error);
         }
-
-        if (this.settings.autoFormatOnSave) {
-            this.registerEvent(
-                (this.app.vault as Vault).on('modify', (file: TFile) => {
-                    if (file.extension === 'md') {
-                        this.formatMarkdown(file);
-                    }
-                })
-            );
-        }
-
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-        this.formatHistory = new FormatHistory();
-
-        this.addCommand({
-            id: 'show-format-history',
-            name: '显示格式化历史',
-            callback: () => this.showFormatHistory()
-        });
     }
 
     onunload() {
@@ -469,6 +481,14 @@ export default class MarkdownMasterPlugin extends Plugin {
             const newBullet = /^\d+\./.test(bullet) ? bullet : this.settings.listBulletChar;
             return `${newIndent}${newBullet} `;
         });
+    }
+
+    private async someMethod() {
+        if (!this.app || !this.app.vault) {
+            console.error('App or vault is not initialized');
+            return;
+        }
+        // 使用 this.app 或 this.app.vault 的代码
     }
 }
 
