@@ -1,5 +1,4 @@
-import { Plugin } from 'obsidian';
-import { App, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace, PluginManifest } from 'obsidian';
+import { Plugin, App, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace, PluginManifest } from 'obsidian';
 import { diffChars, Change } from 'diff';  // 导入 Change 类型
 
 // 添加这个类型别名
@@ -62,8 +61,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     private lastUnformattedContent: string = '';
     private formatHistory: FormatHistory;
 
-    constructor() {
-        super();
+    constructor(app: App, manifest: PluginManifest) {
+        super(app, manifest);
         this.settings = DEFAULT_SETTINGS;
         this.formatHistory = new FormatHistory();
     }
