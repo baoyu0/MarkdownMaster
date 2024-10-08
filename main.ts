@@ -1,5 +1,5 @@
 import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace } from 'obsidian';
-import { diffChars } from 'diff';
+import { diffChars, Change } from 'diff';  // 导入 Change 类型
 
 // 添加这个类型别名
 type DropdownComponent = {
@@ -482,7 +482,7 @@ class FormatPreviewModal extends Modal {
         const diffContainer = contentEl.createDiv({ cls: 'markdown-master-diff' });
         const diff = diffChars(this.originalContent, this.formattedContent);
 
-        diff.forEach((part) => {
+        diff.forEach((part: Change) => {  // 为 part 指定 Change 类型
             const span = diffContainer.createSpan();
             span.textContent = part.value;
             if (part.added) {
