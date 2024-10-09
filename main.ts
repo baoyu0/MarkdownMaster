@@ -151,94 +151,58 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        // 使用 setInterval 来等待 this.app 和 this.app.vault 被正确初始化
-        const initPlugin = () => {
-            if (this.app && this.app.vault) {
-                this.initialize();
-            } else {
-                setTimeout(initPlugin, 100); // 每100毫秒检查一次
-            }
-        };
+        await this.loadSettings();
+        this.formatHistory = new FormatHistory();
 
-        initPlugin();
-    }
+        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
-    private async initialize() {
-        try {
-            await this.loadSettings();
+        this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
+            this.showFormatOptions();
+        });
 
-            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+        this.addCommand({
+            id: 'format-markdown',
+            name: '格式化当前Markdown文件',
+            callback: () => this.showFormatOptions()
+        });
 
-            this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
-                this.showFormatOptions();
-            });
+        this.addCommand({
+            id: 'undo-last-formatting',
+            name: '撤销上次格式化',
+            callback: () => this.undoLastFormatting()
+        });
 
-            this.addCommand({
-                id: 'format-markdown',
-                name: '格式化当前Markdown文件',
-                callback: () => this.showFormatOptions()
-            });
+        this.addCommand({
+            id: 'batch-format-markdown',
+            name: '批量格式化所有Markdown文件',
+            callback: () => this.batchFormat()
+        });
 
-            this.addCommand({
-                id: 'undo-last-formatting',
-                name: '撤销上次格式化',
-                callback: () => this.undoLastFormatting()
-            });
-
-            this.addCommand({
-                id: 'batch-format-markdown',
-                name: '批量格式化所有Markdown文件',
-                callback: () => this.batchFormat()
-            });
-
-            if (this.settings.enableAutoFormat) {
-                this.registerFileOpenEvent();
-            }
-
-            if (this.settings.autoFormatOnSave) {
-                this.registerFileSaveEvent();
-            }
-
-            console.log('MarkdownMaster plugin loaded successfully');
-        } catch (error) {
-            console.error('Error initializing MarkdownMaster plugin:', error);
+        if (this.settings.enableAutoFormat) {
+            this.registerEvent(
+                this.app.workspace.on('file-open', (file: TFile) => {
+                    if (file && file.extension === 'md') {
+                        this.autoFormatFile(file);
+                    }
+                })
+            );
         }
-    }
 
-    private async loadSettings() {
-        try {
-            const loadedData = await this.loadData();
-            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.settings = DEFAULT_SETTINGS;
+        if (this.settings.autoFormatOnSave) {
+            this.registerEvent(
+                this.app.vault.on('modify', (file: TFile) => {
+                    if (file.extension === 'md') {
+                        this.formatMarkdown(file);
+                    }
+                })
+            );
         }
+
+        console.log('MarkdownMaster plugin loaded successfully');
     }
 
-    private registerFileOpenEvent() {
-        this.fileOpenRef = this.registerEvent(
-            this.app.workspace.on('file-open', (file: TFile) => {
-                if (file && file.extension === 'md') {
-                    this.autoFormatFile(file);
-                }
-            })
-        );
-    }
-
-    private registerFileSaveEvent() {
-        this.registerEvent(
-            this.app.vault.on('modify', (file: TFile) => {
-                if (file.extension === 'md') {
-                    this.formatMarkdown(file);
-                }
-            })
-        );
-    }
-
-    onunload() {
-        if (this.fileOpenRef) {
-            this.app.workspace.offref(this.fileOpenRef);
-        }
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
 
     async saveSettings() {
@@ -258,46 +222,38 @@ export default class MarkdownMasterPlugin extends Plugin {
         return mergedRules;
     }
 
-    async formatMarkdown(input: TFile | string): Promise<string> {
-        try {
-            let content: string;
-            if (typeof input === 'string') {
-                content = input;
-            } else {
-                content = await this.app.vault.read(input);
-            }
-
-            this.lastUnformattedContent = content;
-
-            content = this.applyFormatTemplate(content);
-
-            for (const rule of this.settings.formatRules) {
-                if (rule.enabled) {
-                    content = rule.apply(content);
-                }
-            }
-
-            if (this.settings.enableHeadingConversion) {
-                content = this.convertHeadings(content);
-            }
-
-            if (this.settings.enableLinkCleaning) {
-                content = this.cleanLinks(content);
-            }
-
-            if (this.settings.unifyLinkStyle) {
-                content = this.unifyLinks(content);
-            }
-
-            content = this.applyCustomRegexRules(content);
-
-            this.formatHistory.addToHistory(content);
-
-            return content;
-        } catch (error) {
-            this.handleError(error, '格式化文档');
-            return typeof input === 'string' ? input : await this.app.vault.read(input);
+    async formatMarkdown(input: string | TFile): Promise<string> {
+        let content: string;
+        if (typeof input === 'string') {
+            content = input;
+        } else {
+            content = await this.app.vault.read(input);
         }
+
+        // 应用格式化规则
+        for (const rule of this.settings.formatRules) {
+            if (rule.enabled) {
+                content = rule.apply(content);
+            }
+        }
+
+        // 应用其他格式化选项
+        if (this.settings.enableTableFormat) {
+            content = this.formatTables(content);
+        }
+
+        if (this.settings.enableCodeHighlight) {
+            content = this.formatCodeBlocks(content);
+        }
+
+        // ... 应用其他格式化选项 ...
+
+        if (typeof input !== 'string') {
+            await this.app.vault.modify(input, content);
+            new Notice('Markdown file has been formatted');
+        }
+
+        return content;
     }
 
     private applyFormatTemplate(content: string): string {
