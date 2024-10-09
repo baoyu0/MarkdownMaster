@@ -126,31 +126,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     async onload() {
         console.log('Loading MarkdownMaster plugin');
-
         await this.loadSettings();
-
-        // 使用 app.workspace.onLayoutReady 来确保布局已经准备就绪
-        this.app.workspace.onLayoutReady(() => {
-            this.initialize();
-        });
-    }
-
-    private async initialize() {
-        try {
-            if (!this.app || !this.app.vault) {
-                throw new Error('App or vault is not initialized');
-            }
-
-            this.initializePlugin();
-
-            console.log('MarkdownMaster plugin loaded successfully');
-        } catch (error) {
-            console.error('Error in MarkdownMaster initialization:', error);
-            new Notice('MarkdownMaster plugin failed to initialize. Check console for details.');
-        }
-    }
-
-    private initializePlugin() {
         this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
             this.showFormatOptions();
         });
@@ -173,21 +149,27 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.batchFormat()
         });
 
-        if (this.settings.enableAutoFormat) {
-            this.registerFileOpenEvent();
-        }
-
-        if (this.settings.autoFormatOnSave) {
-            this.registerFileSaveEvent();
-        }
-
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-
-        this.addCommand({
-            id: 'show-format-history',
-            name: '显示格式化历史',
-            callback: () => this.showFormatHistory()
+        this.app.workspace.onLayoutReady(() => {
+            this.initialize();
         });
+    }
+
+    private initialize() {
+        try {
+            if (this.settings.enableAutoFormat) {
+                this.registerFileOpenEvent();
+            }
+
+            if (this.settings.autoFormatOnSave) {
+                this.registerFileSaveEvent();
+            }
+
+            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+            console.log('MarkdownMaster plugin loaded successfully');
+        } catch (error) {
+            console.error('Error in MarkdownMaster initialization:', error);
+            new Notice('MarkdownMaster plugin failed to initialize. Check console for details.');
+        }
     }
 
     private registerFileOpenEvent() {
@@ -212,7 +194,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     onunload() {
         if (this.fileOpenRef) {
-            (this.app.workspace as Workspace).offref(this.fileOpenRef);
+            this.app.workspace.offref(this.fileOpenRef);
         }
     }
 
