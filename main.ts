@@ -158,40 +158,44 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private async initialize() {
-        await this.loadSettings();
+        try {
+            await this.loadSettings();
 
-        this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
-            this.showFormatOptions();
-        });
+            this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
+                this.showFormatOptions();
+            });
 
-        this.addCommand({
-            id: 'format-markdown',
-            name: '格式化当前Markdown文件',
-            callback: () => this.showFormatOptions()
-        });
+            this.addCommand({
+                id: 'format-markdown',
+                name: '格式化当前Markdown文件',
+                callback: () => this.showFormatOptions()
+            });
 
-        this.addCommand({
-            id: 'undo-last-formatting',
-            name: '撤销上次格式化',
-            callback: () => this.undoLastFormatting()
-        });
+            this.addCommand({
+                id: 'undo-last-formatting',
+                name: '撤销上次格式化',
+                callback: () => this.undoLastFormatting()
+            });
 
-        this.addCommand({
-            id: 'batch-format-markdown',
-            name: '批量格式化所有Markdown文件',
-            callback: () => this.batchFormat()
-        });
+            this.addCommand({
+                id: 'batch-format-markdown',
+                name: '批量格式化所有Markdown文件',
+                callback: () => this.batchFormat()
+            });
 
-        if (this.settings.enableAutoFormat) {
-            this.registerFileOpenEvent();
+            if (this.settings.enableAutoFormat) {
+                this.registerFileOpenEvent();
+            }
+
+            if (this.settings.autoFormatOnSave) {
+                this.registerFileSaveEvent();
+            }
+
+            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+            console.log('MarkdownMaster plugin loaded successfully');
+        } catch (error) {
+            console.error('Error initializing MarkdownMaster plugin:', error);
         }
-
-        if (this.settings.autoFormatOnSave) {
-            this.registerFileSaveEvent();
-        }
-
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-        console.log('MarkdownMaster plugin loaded successfully');
     }
 
     private registerFileOpenEvent() {
