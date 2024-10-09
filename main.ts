@@ -1,4 +1,4 @@
-import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice } from 'obsidian';
+import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice, Modal, HTMLElement as ObsidianHTMLElement } from 'obsidian';
 
 export interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
@@ -106,11 +106,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     async formatMarkdown() {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (activeView) {
-            const editor = activeView.editor;
-            const content = editor.getValue();
-            const formattedContent = await this.applyFormatting(content);
-            editor.setValue(formattedContent);
-            new Notice('Markdown formatted successfully');
+            await this.showFormatPreview();
         }
     }
 
@@ -305,6 +301,22 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.settings.autoFormatOnSave = !this.settings.autoFormatOnSave;
         this.saveSettings();
         new Notice(`Auto format on save ${this.settings.autoFormatOnSave ? 'enabled' : 'disabled'}`);
+    }
+
+    async showFormatPreview() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            const editor = activeView.editor;
+            const originalContent = editor.getValue();
+            const formattedContent = await this.applyFormatting(originalContent);
+            
+            new FormatPreviewModal(this.app, originalContent, formattedContent, async (result) => {
+                if (result) {
+                    editor.setValue(formattedContent);
+                    new Notice('Formatting applied');
+                }
+            }).open();
+        }
     }
 }
 
@@ -525,6 +537,97 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     }));
         }
 
+        new Setting(containerEl)
+            .setName('Export Settings')
+            .setDesc('Export your current settings to a JSON file')
+            .addButton(button => button
+                .setButtonText('Export')
+                .onClick(async () => {
+                    const settingsJson = JSON.stringify(this.plugin.settings, null, 2);
+                    const blob = new Blob([settingsJson], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'markdown-master-settings.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }));
+
+        new Setting(containerEl)
+            .setName('Import Settings')
+            .setDesc('Import settings from a JSON file')
+            .addButton(button => button
+                .setButtonText('Import')
+                .onClick(async () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'application/json';
+                    input.onchange = async (e: Event) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = async (e) => {
+                                try {
+                                    const settings = JSON.parse(e.target?.result as string);
+                                    this.plugin.settings = settings;
+                                    await this.plugin.saveSettings();
+                                    new Notice('Settings imported successfully');
+                                    this.display();
+                                } catch (error) {
+                                    new Notice('Error importing settings');
+                                    console.error(error);
+                                }
+                            };
+                            reader.readAsText(file);
+                        }
+                    };
+                    input.click();
+                }));
+
         // 添加更多设置项...
+    }
+}
+
+class FormatPreviewModal extends Modal {
+    constructor(app: App, private originalContent: string, private formattedContent: string, private onSubmit: (result: boolean) => void) {
+        super(app);
+    }
+
+    onOpen() {
+        const {contentEl} = this;
+        contentEl.createEl('h2', {text: 'Format Preview'});
+
+        const originalDiv = contentEl.createDiv();
+        originalDiv.createEl('h3', {text: 'Original'});
+        this.renderMarkdown(this.originalContent, originalDiv);
+
+        const formattedDiv = contentEl.createDiv();
+        formattedDiv.createEl('h3', {text: 'Formatted'});
+        this.renderMarkdown(this.formattedContent, formattedDiv);
+
+        new Setting(contentEl)
+            .addButton(btn => btn
+                .setButtonText('Apply')
+                .setCta()
+                .onClick(() => {
+                    this.close();
+                    this.onSubmit(true);
+                }))
+            .addButton(btn => btn
+                .setButtonText('Cancel')
+                .onClick(() => {
+                    this.close();
+                    this.onSubmit(false);
+                }));
+    }
+
+    onClose() {
+        const {contentEl} = this;
+        contentEl.empty();
+    }
+
+    private renderMarkdown(content: string, container: ObsidianHTMLElement) {
+        const tempEl = container.createDiv();
+        (this.app as any).internalPlugins.plugins['markdown'].cm6.editorInfoByPath[''].renderMarkdown(content, tempEl);
     }
 }
