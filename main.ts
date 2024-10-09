@@ -126,10 +126,11 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        try {
-            // 添加一个短暂的延迟，等待 app 和 vault 初始化
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        this.app.workspace.onLayoutReady(this.initialize.bind(this));
+    }
 
+    private async initialize() {
+        try {
             if (!this.app || !this.app.vault) {
                 throw new Error('App or vault is not initialized');
             }
@@ -144,8 +145,8 @@ export default class MarkdownMasterPlugin extends Plugin {
 
             console.log('MarkdownMaster plugin loaded successfully');
         } catch (error) {
-            console.error('Error in MarkdownMaster onload:', error);
-            new Notice('MarkdownMaster plugin failed to load. Check console for details.');
+            console.error('Error in MarkdownMaster initialization:', error);
+            new Notice('MarkdownMaster plugin failed to initialize. Check console for details.');
         }
     }
 
