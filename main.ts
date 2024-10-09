@@ -1,4 +1,4 @@
-import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile } from 'obsidian';
+import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice } from 'obsidian';
 
 export interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
@@ -56,32 +56,23 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         this.addCommand({
             id: 'format-markdown',
-            name: 'Format Markdown',
+            name: 'Format Current File',
             callback: () => this.formatMarkdown(),
         });
 
         this.addCommand({
-            id: 'format-markdown-file',
-            name: 'Format Current Markdown File',
-            checkCallback: (checking: boolean) => {
-                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (activeView) {
-                    if (!checking) {
-                        this.formatMarkdown();
-                    }
-                    return true;
-                }
-                return false;
-            }
+            id: 'format-all-markdown',
+            name: 'Format All Markdown Files',
+            callback: () => this.formatAllMarkdownFiles(),
+        });
+
+        this.addCommand({
+            id: 'toggle-auto-format',
+            name: 'Toggle Auto Format on Save',
+            callback: () => this.toggleAutoFormat(),
         });
 
         this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-
-        // this.registerEvent(
-        //     this.app.workspace.on('file-menu', (menu: Menu, file: TFile, source: string) => {
-        //         // ...
-        //     })
-        // );
 
         if (this.settings.autoFormatOnSave) {
             this.registerEvent(
@@ -109,7 +100,16 @@ export default class MarkdownMasterPlugin extends Plugin {
             const content = editor.getValue();
             const formattedContent = await this.applyFormatting(content);
             editor.setValue(formattedContent);
+            new Notice('Markdown formatted successfully');
         }
+    }
+
+    async formatAllMarkdownFiles() {
+        const files = this.app.vault.getMarkdownFiles();
+        for (const file of files) {
+            await this.formatFile(file);
+        }
+        new Notice('All Markdown files formatted successfully');
     }
 
     async formatFile(file: TFile) {
@@ -119,15 +119,33 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async applyFormatting(content: string): Promise<string> {
-        // 在这里实现格式化逻辑
-        // 这只是一个示例，您需要根据实际需求实现完整的格式化逻辑
+        if (this.settings.enableHeadingConversion) {
+            content = this.convertHeadings(content);
+        }
         if (this.settings.enableListFormatting) {
             content = this.formatLists(content);
         }
         if (this.settings.enableTableFormat) {
             content = this.formatTables(content);
         }
-        // 添加更多格式化步骤...
+        if (this.settings.enableLinkCleaning) {
+            content = this.cleanLinks(content);
+        }
+        if (this.settings.unifyLinkStyle) {
+            content = this.unifyLinkStyle(content);
+        }
+        if (this.settings.enableSymbolDeletion) {
+            content = this.deleteSymbols(content);
+        }
+        if (this.settings.enableCodeHighlight) {
+            content = this.highlightCode(content);
+        }
+        content = this.applyCustomRules(content);
+        return content;
+    }
+
+    convertHeadings(content: string): string {
+        // 实现标题转换逻辑
         return content;
     }
 
@@ -142,11 +160,42 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     formatTables(content: string): string {
         // 实现表格格式化逻辑
-        // 这里只是一个简单的示例，实际实现可能需要更复杂的逻辑
-        return content.replace(/\|(.+)\|/g, (match, cells) => {
-            const formattedCells = cells.split('|').map((cell: string) => cell.trim()).join(' | ');
-            return `| ${formattedCells} |`;
-        });
+        return content;
+    }
+
+    cleanLinks(content: string): string {
+        // 实现链接清理逻辑
+        return content;
+    }
+
+    unifyLinkStyle(content: string): string {
+        // 实现链接样式统一逻辑
+        return content;
+    }
+
+    deleteSymbols(content: string): string {
+        // 实现符号删除逻辑
+        return content;
+    }
+
+    highlightCode(content: string): string {
+        // 实现代码高亮逻辑
+        return content;
+    }
+
+    applyCustomRules(content: string): string {
+        // 应用自定义正则表达式规则
+        for (const rule of this.settings.customRegexRules) {
+            const regex = new RegExp(rule.pattern, 'g');
+            content = content.replace(regex, rule.replacement);
+        }
+        return content;
+    }
+
+    toggleAutoFormat() {
+        this.settings.autoFormatOnSave = !this.settings.autoFormatOnSave;
+        this.saveSettings();
+        new Notice(`Auto format on save ${this.settings.autoFormatOnSave ? 'enabled' : 'disabled'}`);
     }
 }
 
@@ -165,11 +214,21 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Enable Auto Format')
-            .setDesc('Automatically format Markdown content')
+            .setDesc('Automatically format Markdown content on save')
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableAutoFormat)
+                .setValue(this.plugin.settings.autoFormatOnSave)
                 .onChange(async (value) => {
-                    this.plugin.settings.enableAutoFormat = value;
+                    this.plugin.settings.autoFormatOnSave = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Enable Heading Conversion')
+            .setDesc('Convert headings to specified levels')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableHeadingConversion)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableHeadingConversion = value;
                     await this.plugin.saveSettings();
                 }));
 
