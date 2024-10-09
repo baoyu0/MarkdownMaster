@@ -44,6 +44,7 @@ describe('MarkdownMasterPlugin', () => {
       listBulletChar: '-',
       listIndentSpaces: 2,
       enableLinkCleaning: false,
+      linkCleaningRules: [], // 添加这一行
       unifyLinkStyle: false,
       linkStyle: 'inline',
       enableSymbolDeletion: false,

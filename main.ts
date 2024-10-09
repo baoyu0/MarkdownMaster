@@ -12,6 +12,7 @@ export interface MarkdownMasterSettings {
     listBulletChar: string;
     listIndentSpaces: number;
     enableLinkCleaning: boolean;
+    linkCleaningRules: Array<{ pattern: string; enabled: boolean }>;
     unifyLinkStyle: boolean;
     linkStyle: string;
     enableSymbolDeletion: boolean;
@@ -34,6 +35,9 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     listBulletChar: '-',
     listIndentSpaces: 2,
     enableLinkCleaning: false,
+    linkCleaningRules: [
+        { pattern: '\\[([^\\]]+)\\]\\(https?://example\\.com/.*\\)', enabled: true },
+    ],
     unifyLinkStyle: false,
     linkStyle: 'inline',
     enableSymbolDeletion: false,
@@ -186,19 +190,13 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     cleanLinks(content: string): string {
-        // 移除空链接
-        content = content.replace(/\[([^\]]+)\]\(\s*\)/g, '$1');
-        
-        // 移除重复的链接
-        const linkMap = new Map();
-        return content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
-            if (linkMap.has(url)) {
-                return text;
-            } else {
-                linkMap.set(url, true);
-                return match;
+        this.settings.linkCleaningRules.forEach(rule => {
+            if (rule.enabled) {
+                const regex = new RegExp(rule.pattern, 'g');
+                content = content.replace(regex, '');
             }
         });
+        return content;
     }
 
     unifyLinkStyle(content: string): string {
@@ -331,6 +329,55 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.recursiveHeadingConversion = value;
                         await this.plugin.saveSettings();
+                    }));
+        }
+
+        new Setting(containerEl)
+            .setName('Enable Link Cleaning')
+            .setDesc('Clean links based on custom rules')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableLinkCleaning)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableLinkCleaning = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // 刷新设置页面
+                }));
+
+        if (this.plugin.settings.enableLinkCleaning) {
+            this.plugin.settings.linkCleaningRules.forEach((rule, index) => {
+                const ruleContainer = containerEl.createDiv();
+                new Setting(ruleContainer)
+                    .setName(`Rule ${index + 1}`)
+                    .setDesc('Enter regex pattern for link cleaning')
+                    .addText(text => text
+                        .setValue(rule.pattern)
+                        .onChange(async (value: string) => {
+                            this.plugin.settings.linkCleaningRules[index].pattern = value;
+                            await this.plugin.saveSettings();
+                        }))
+                    .addToggle(toggle => toggle
+                        .setValue(rule.enabled)
+                        .onChange(async (value) => {
+                            this.plugin.settings.linkCleaningRules[index].enabled = value;
+                            await this.plugin.saveSettings();
+                        }))
+                    .addButton(button => button
+                        .setButtonText('Delete')
+                        .onClick(async () => {
+                            this.plugin.settings.linkCleaningRules.splice(index, 1);
+                            await this.plugin.saveSettings();
+                            this.display(); // 刷新设置页面
+                        }));
+            });
+
+            new Setting(containerEl)
+                .setName('Add New Rule')
+                .addButton(button => button
+                    .setButtonText('Add')
+                    .onClick(async () => {
+                        this.plugin.settings.linkCleaningRules.push({ pattern: '', enabled: true });
+                        await this.plugin.saveSettings();
+                        this.display(); // 刷新设置页面
                     }));
         }
 
