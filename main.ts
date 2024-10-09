@@ -151,52 +151,68 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        await this.loadSettings();
+        // 使用 setInterval 来等待 this.app 和 this.app.vault 被正确初始化
+        const initPlugin = () => {
+            if (this.app && this.app.vault) {
+                this.initialize();
+            } else {
+                setTimeout(initPlugin, 100); // 每100毫秒检查一次
+            }
+        };
 
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-
-        // 使用 this.app.workspace.onLayoutReady 来确保 app 和 workspace 已经准备好
-        this.app.workspace.onLayoutReady(() => {
-            this.initialize();
-        });
+        initPlugin();
     }
 
-    private initialize() {
-        this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
-            this.showFormatOptions();
-        });
+    private async initialize() {
+        try {
+            await this.loadSettings();
 
-        this.addCommand({
-            id: 'format-markdown',
-            name: '格式化当前Markdown文件',
-            callback: () => this.showFormatOptions()
-        });
+            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
-        this.addCommand({
-            id: 'undo-last-formatting',
-            name: '撤销上次格式化',
-            callback: () => this.undoLastFormatting()
-        });
+            this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
+                this.showFormatOptions();
+            });
 
-        this.addCommand({
-            id: 'batch-format-markdown',
-            name: '批量格式化所有Markdown文件',
-            callback: () => this.batchFormat()
-        });
+            this.addCommand({
+                id: 'format-markdown',
+                name: '格式化当前Markdown文件',
+                callback: () => this.showFormatOptions()
+            });
 
-        if (this.settings.enableAutoFormat) {
-            this.registerFileOpenEvent();
+            this.addCommand({
+                id: 'undo-last-formatting',
+                name: '撤销上次格式化',
+                callback: () => this.undoLastFormatting()
+            });
+
+            this.addCommand({
+                id: 'batch-format-markdown',
+                name: '批量格式化所有Markdown文件',
+                callback: () => this.batchFormat()
+            });
+
+            if (this.settings.enableAutoFormat) {
+                this.registerFileOpenEvent();
+            }
+
+            if (this.settings.autoFormatOnSave) {
+                this.registerFileSaveEvent();
+            }
+
+            console.log('MarkdownMaster plugin loaded successfully');
+        } catch (error) {
+            console.error('Error initializing MarkdownMaster plugin:', error);
         }
-
-        if (this.settings.autoFormatOnSave) {
-            this.registerFileSaveEvent();
-        }
-
-        console.log('MarkdownMaster plugin loaded successfully');
     }
 
-    async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    private async loadSettings() {
+        try {
+            const loadedData = await this.loadData();
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            this.settings = DEFAULT_SETTINGS;
+        }
     }
 
     private registerFileOpenEvent() {
