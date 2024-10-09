@@ -1,6 +1,6 @@
 {
   "name": "markdown-master",
-  "version": "1.5.53",
+  "version": "1.5.54",
   "description": "一键格式化Markdown文件，提供自定义规则、标题转换、列表格式化、链接处理等多种功能",
   "main": "main.js",
   "scripts": {
