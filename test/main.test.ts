@@ -108,11 +108,12 @@ describe('MarkdownMasterPlugin', () => {
     expect(result).toBe(expected);
   });
 
-  test('formatCodeBlocks formats code blocks correctly', () => {
+  test('formatMarkdown handles code blocks correctly', async () => {
+    plugin.settings.enableCodeHighlight = true;
     const input = "```js\nconst x = 1;\n```";
     const expected = "```js\nconst x = 1;\n```";
     
-    const result = plugin.formatCodeBlocks(input);
+    const result = await plugin.formatMarkdown(input);
     expect(result).toBe(expected);
   });
 });

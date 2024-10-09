@@ -23,7 +23,8 @@ interface FormatRule {
     apply: (content: string) => string;
 }
 
-interface MarkdownMasterSettings {
+// 在文件顶部添加这行
+export interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
     autoFormatOnSave: boolean;
     formatTemplate: string;
