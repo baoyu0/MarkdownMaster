@@ -18,7 +18,8 @@
       "ES7"
     ],
     "esModuleInterop": true,
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "skipLibCheck": true  // 添加这一行
   },
   "include": [
     "**/*.ts"

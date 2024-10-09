@@ -1,4 +1,4 @@
-import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice, Modal, HTMLElement as ObsidianHTMLElement } from 'obsidian';
+import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice, Modal } from 'obsidian';
 
 export interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
@@ -106,7 +106,16 @@ export default class MarkdownMasterPlugin extends Plugin {
     async formatMarkdown() {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (activeView) {
-            await this.showFormatPreview();
+            const editor = activeView.editor;
+            const originalContent = editor.getValue();
+            const formattedContent = await this.applyFormatting(originalContent);
+            
+            new FormatPreviewModal(this.app, originalContent, formattedContent, (result) => {
+                if (result) {
+                    editor.setValue(formattedContent);
+                    new Notice('Formatting applied');
+                }
+            }).open();
         }
     }
 
@@ -301,22 +310,6 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.settings.autoFormatOnSave = !this.settings.autoFormatOnSave;
         this.saveSettings();
         new Notice(`Auto format on save ${this.settings.autoFormatOnSave ? 'enabled' : 'disabled'}`);
-    }
-
-    async showFormatPreview() {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (activeView) {
-            const editor = activeView.editor;
-            const originalContent = editor.getValue();
-            const formattedContent = await this.applyFormatting(originalContent);
-            
-            new FormatPreviewModal(this.app, originalContent, formattedContent, async (result) => {
-                if (result) {
-                    editor.setValue(formattedContent);
-                    new Notice('Formatting applied');
-                }
-            }).open();
-        }
     }
 }
 
@@ -595,15 +588,17 @@ class FormatPreviewModal extends Modal {
 
     onOpen() {
         const {contentEl} = this;
+        contentEl.empty();
+        
         contentEl.createEl('h2', {text: 'Format Preview'});
 
         const originalDiv = contentEl.createDiv();
         originalDiv.createEl('h3', {text: 'Original'});
-        this.renderMarkdown(this.originalContent, originalDiv);
+        this.renderMarkdown(this.originalContent, originalDiv as unknown as HTMLElement);
 
         const formattedDiv = contentEl.createDiv();
         formattedDiv.createEl('h3', {text: 'Formatted'});
-        this.renderMarkdown(this.formattedContent, formattedDiv);
+        this.renderMarkdown(this.formattedContent, formattedDiv as unknown as HTMLElement);
 
         new Setting(contentEl)
             .addButton(btn => btn
@@ -626,8 +621,9 @@ class FormatPreviewModal extends Modal {
         contentEl.empty();
     }
 
-    private renderMarkdown(content: string, container: ObsidianHTMLElement) {
-        const tempEl = container.createDiv();
+    private renderMarkdown(content: string, container: HTMLElement) {
+        const tempEl = document.createElement('div');
         (this.app as any).internalPlugins.plugins['markdown'].cm6.editorInfoByPath[''].renderMarkdown(content, tempEl);
+        container.appendChild(tempEl);
     }
 }
