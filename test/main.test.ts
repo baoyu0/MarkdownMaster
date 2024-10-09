@@ -1,11 +1,16 @@
-import MarkdownMasterPlugin, { MarkdownMasterSettings } from '../main';
-import { App, PluginManifest } from 'obsidian';
+import MarkdownMasterPlugin from '../main';
+import { App, Plugin } from 'obsidian';
+import { MarkdownMasterSettings } from '../main'; // 假设 MarkdownMasterSettings 在 main.ts 中定义
 
 describe('MarkdownMasterPlugin', () => {
   let plugin: MarkdownMasterPlugin;
+  let mockApp: App;
 
   beforeEach(() => {
+    mockApp = {} as App; // 创建一个模拟的 App 对象
     plugin = new MarkdownMasterPlugin();
+    (plugin as any).app = mockApp; // 手动设置 app 属性
+
     // 手动设置默认设置
     plugin.settings = {
       enableAutoFormat: false,

@@ -14,16 +14,10 @@ type DropdownComponent = {
     onChange(callback: (value: string) => any): DropdownComponent;
 };
 
-interface FormatRule {
-    id: string;
-    name: string;
-    description: string;
-    enabled: boolean;
-    priority: number;
-    apply: (content: string) => string;
-}
-
 // 在文件顶部添加这行
+export type { MarkdownMasterSettings };
+
+// 确保 MarkdownMasterSettings 接口定义如下（如果还没有定义的话）
 export interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
     autoFormatOnSave: boolean;
@@ -45,6 +39,16 @@ export interface MarkdownMasterSettings {
     enableTableFormat: boolean;
     enableCodeHighlight: boolean;
     formatRules: FormatRule[];
+}
+
+// 如果 FormatRule 接口还没有定义，也添加它
+export interface FormatRule {
+    id: string;
+    name: string;
+    description: string;
+    enabled: boolean;
+    priority: number;
+    apply: (content: string) => string;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -118,8 +122,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     private lastUnformattedContent: string = '';
     private formatHistory: FormatHistory;
 
-    constructor(app: App, manifest: any) {
-        super(app, manifest);
+    constructor() {
+        super();
         this.settings = DEFAULT_SETTINGS;
         this.formatHistory = new FormatHistory();
     }
