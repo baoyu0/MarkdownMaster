@@ -152,22 +152,24 @@ export default class MarkdownMasterPlugin extends Plugin {
         console.log('Loading MarkdownMaster plugin');
 
         // 等待应用程序完全加载
-        await this.loadSettings();
-
-        // 使用 setTimeout 来确保 workspace 已经准备好
-        setTimeout(() => {
-            if (this.app.workspace) {
-                this.app.workspace.onLayoutReady(() => {
-                    this.initialize();
-                });
-            } else {
-                console.error('Workspace is not available');
-                this.initialize(); // 尝试直接初始化
-            }
-        }, 0);
+        this.app.workspace.onLayoutReady(async () => {
+            await this.loadSettings();
+            this.initialize();
+        });
     }
 
-    private async initialize() {
+    private async loadSettings() {
+        try {
+            const loadedData = await this.loadData();
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            this.settings = DEFAULT_SETTINGS;
+        }
+    }
+
+    private initialize() {
         try {
             this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
                 this.showFormatOptions();
@@ -229,17 +231,6 @@ export default class MarkdownMasterPlugin extends Plugin {
     onunload() {
         if (this.fileOpenRef) {
             this.app.workspace.offref(this.fileOpenRef);
-        }
-    }
-
-    async loadSettings() {
-        try {
-            const loadedData = await this.loadData();
-            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.settings = DEFAULT_SETTINGS;
         }
     }
 
