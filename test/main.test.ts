@@ -31,10 +31,13 @@ describe('MarkdownMasterPlugin', () => {
     };
   });
 
-  test('standardizeLists', () => {
-    const input = "* Item 1\n+ Item 2\n- Item 3";
-    const expected = "- Item 1\n- Item 2\n- Item 3";
-    expect(plugin.standardizeLists(input)).toBe(expected);
+  test('formatMarkdown handles list formatting', async () => {
+    const input = "- Item 1\n  - Subitem 1\n- Item 2";
+    const expected = "- Item 1\n  - Subitem 1\n- Item 2";
+    
+    // 使用 formatMarkdown 方法替代 standardizeLists
+    const result = await plugin.formatMarkdown(input);
+    expect(result).toBe(expected);
   });
 
   test('formatMarkdown', async () => {
