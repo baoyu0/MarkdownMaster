@@ -150,7 +150,15 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     async onload() {
         console.log('Loading MarkdownMaster plugin');
-        await this.loadSettings();
+
+        // 等待应用程序完全加载
+        await this.app.workspace.onLayoutReady(async () => {
+            await this.loadSettings();
+            this.initialize();
+        });
+    }
+
+    private async initialize() {
         this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
             this.showFormatOptions();
         });
@@ -173,27 +181,16 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.batchFormat()
         });
 
-        this.app.workspace.onLayoutReady(() => {
-            this.initialize();
-        });
-    }
-
-    private initialize() {
-        try {
-            if (this.settings.enableAutoFormat) {
-                this.registerFileOpenEvent();
-            }
-
-            if (this.settings.autoFormatOnSave) {
-                this.registerFileSaveEvent();
-            }
-
-            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-            console.log('MarkdownMaster plugin loaded successfully');
-        } catch (error) {
-            console.error('Error in MarkdownMaster initialization:', error);
-            new Notice('MarkdownMaster plugin failed to initialize. Check console for details.');
+        if (this.settings.enableAutoFormat) {
+            this.registerFileOpenEvent();
         }
+
+        if (this.settings.autoFormatOnSave) {
+            this.registerFileSaveEvent();
+        }
+
+        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+        console.log('MarkdownMaster plugin loaded successfully');
     }
 
     private registerFileOpenEvent() {
@@ -223,9 +220,14 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async loadSettings() {
-        const loadedData = await this.loadData();
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-        this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
+        try {
+            const loadedData = await this.loadData();
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            this.settings = DEFAULT_SETTINGS;
+        }
     }
 
     async saveSettings() {
