@@ -21,6 +21,9 @@ export interface MarkdownMasterSettings {
     customRegexRules: Array<{ pattern: string; replacement: string }>;
     enableTableFormat: boolean;
     enableCodeHighlight: boolean;
+    enableTextDeletion: boolean;
+    textDeletionRules: Array<{ pattern: string; enabled: boolean }>;
+    textDeletionHistory: Array<{ pattern: string; deletedText: string; timestamp: number }>;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -46,6 +49,9 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     customRegexRules: [],
     enableTableFormat: false,
     enableCodeHighlight: false,
+    enableTextDeletion: false,
+    textDeletionRules: [],
+    textDeletionHistory: [],
 };
 
 export default class MarkdownMasterPlugin extends Plugin {
@@ -144,6 +150,9 @@ export default class MarkdownMasterPlugin extends Plugin {
         if (this.settings.enableCodeHighlight) {
             content = this.highlightCode(content);
         }
+        if (this.settings.enableTextDeletion) {
+            content = this.deleteText(content);
+        }
         content = this.applyCustomRules(content);
         return content;
     }
@@ -240,6 +249,35 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     highlightCode(content: string): string {
         // 实现代码高亮逻辑
+        return content;
+    }
+
+    deleteText(content: string): string {
+        if (!this.settings.enableTextDeletion) {
+            return content;
+        }
+
+        this.settings.textDeletionRules.forEach(rule => {
+            if (rule.enabled) {
+                const regex = new RegExp(rule.pattern, 'g');
+                content = content.replace(regex, (match) => {
+                    // 保存删除的文本到历史记录
+                    this.settings.textDeletionHistory.push({
+                        pattern: rule.pattern,
+                        deletedText: match,
+                        timestamp: Date.now()
+                    });
+                    return '';
+                });
+            }
+        });
+
+        // 限制历史记录的数量，例如只保留最近的 100 条
+        if (this.settings.textDeletionHistory.length > 100) {
+            this.settings.textDeletionHistory = this.settings.textDeletionHistory.slice(-100);
+        }
+
+        this.saveSettings();
         return content;
     }
 
@@ -376,6 +414,55 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     .setButtonText('Add')
                     .onClick(async () => {
                         this.plugin.settings.linkCleaningRules.push({ pattern: '', enabled: true });
+                        await this.plugin.saveSettings();
+                        this.display(); // 刷新设置页面
+                    }));
+        }
+
+        new Setting(containerEl)
+            .setName('Enable Text Deletion')
+            .setDesc('Delete text based on custom regex patterns')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableTextDeletion)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableTextDeletion = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // 刷新设置页面
+                }));
+
+        if (this.plugin.settings.enableTextDeletion) {
+            this.plugin.settings.textDeletionRules.forEach((rule, index) => {
+                const ruleContainer = containerEl.createDiv();
+                new Setting(ruleContainer)
+                    .setName(`Rule ${index + 1}`)
+                    .setDesc('Enter regex pattern for text deletion')
+                    .addText(text => text
+                        .setValue(rule.pattern)
+                        .onChange(async (value: string) => {
+                            this.plugin.settings.textDeletionRules[index].pattern = value;
+                            await this.plugin.saveSettings();
+                        }))
+                    .addToggle(toggle => toggle
+                        .setValue(rule.enabled)
+                        .onChange(async (value) => {
+                            this.plugin.settings.textDeletionRules[index].enabled = value;
+                            await this.plugin.saveSettings();
+                        }))
+                    .addButton(button => button
+                        .setButtonText('Delete')
+                        .onClick(async () => {
+                            this.plugin.settings.textDeletionRules.splice(index, 1);
+                            await this.plugin.saveSettings();
+                            this.display(); // 刷新设置页面
+                        }));
+            });
+
+            new Setting(containerEl)
+                .setName('Add New Rule')
+                .addButton(button => button
+                    .setButtonText('Add')
+                    .onClick(async () => {
+                        this.plugin.settings.textDeletionRules.push({ pattern: '', enabled: true });
                         await this.plugin.saveSettings();
                         this.display(); // 刷新设置页面
                     }));

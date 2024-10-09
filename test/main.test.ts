@@ -44,7 +44,7 @@ describe('MarkdownMasterPlugin', () => {
       listBulletChar: '-',
       listIndentSpaces: 2,
       enableLinkCleaning: false,
-      linkCleaningRules: [], // 添加这一行
+      linkCleaningRules: [],
       unifyLinkStyle: false,
       linkStyle: 'inline',
       enableSymbolDeletion: false,
@@ -53,6 +53,9 @@ describe('MarkdownMasterPlugin', () => {
       customRegexRules: [],
       enableTableFormat: false,
       enableCodeHighlight: false,
+      enableTextDeletion: false,
+      textDeletionRules: [],
+      textDeletionHistory: [],
       formatRules: [
         {
           id: 'headings',
@@ -175,5 +178,27 @@ describe('MarkdownMasterPlugin', () => {
     const input = "This is a [reference link][1].\n\n[1]: http://example.com";
     const expected = "This is a [reference link](http://example.com).\n\n";
     expect(plugin.unifyLinkStyle(input)).toBe(expected);
+  });
+
+  test('deleteText removes text based on rules', () => {
+    plugin.settings.enableTextDeletion = true;
+    plugin.settings.textDeletionRules = [
+      { pattern: 'TODO:', enabled: true },
+      { pattern: '\\[\\[.*?\\]\\]', enabled: true },
+    ];
+    const input = "TODO: Remove this\nKeep this\n[[Internal link]]";
+    const expected = " Remove this\nKeep this\n";
+    expect(plugin.deleteText(input)).toBe(expected);
+  });
+
+  test('deleteText adds to deletion history', () => {
+    plugin.settings.enableTextDeletion = true;
+    plugin.settings.textDeletionRules = [
+      { pattern: 'TODO:', enabled: true },
+    ];
+    const input = "TODO: Remove this";
+    plugin.deleteText(input);
+    expect(plugin.settings.textDeletionHistory.length).toBe(1);
+    expect(plugin.settings.textDeletionHistory[0].deletedText).toBe("TODO:");
   });
 });
