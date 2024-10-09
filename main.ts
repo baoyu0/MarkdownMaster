@@ -118,8 +118,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     private lastUnformattedContent: string = '';
     private formatHistory: FormatHistory;
 
-    constructor() {
-        super();
+    constructor(app: App, manifest: any) {
+        super(app, manifest);
         this.settings = DEFAULT_SETTINGS;
         this.formatHistory = new FormatHistory();
     }
@@ -199,14 +199,9 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async loadSettings() {
-        try {
-            const loadedData = await this.loadData();
-            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.settings = DEFAULT_SETTINGS;
-        }
+        const loadedData = await this.loadData();
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+        this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
     }
 
     async saveSettings() {
