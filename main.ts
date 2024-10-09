@@ -14,10 +14,7 @@ type DropdownComponent = {
     onChange(callback: (value: string) => any): DropdownComponent;
 };
 
-// 在文件顶部添加这行
-export type { MarkdownMasterSettings };
-
-// 确保 MarkdownMasterSettings 接口定义如下（如果还没有定义的话）
+// 直接定义并导出 MarkdownMasterSettings 接口
 export interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
     autoFormatOnSave: boolean;
@@ -114,6 +111,29 @@ function asObsidianHTMLElement(el: HTMLElement): ObsidianHTMLElement {
     return el as unknown as ObsidianHTMLElement;
 }
 
+// 在 MarkdownMasterPlugin 类定义之前添加这个类
+
+class FormatHistory {
+    private history: string[] = [];
+    private maxHistory = 5;
+
+    addToHistory(content: string) {
+        this.history.unshift(content);
+        if (this.history.length > this.maxHistory) {
+            this.history.pop();
+        }
+    }
+
+    getHistory(): string[] {
+        return this.history;
+    }
+
+    clear() {
+        this.history = [];
+    }
+}
+
+// ... MarkdownMasterPlugin 类定义和其他代码 ...
 
 export default class MarkdownMasterPlugin extends Plugin {
     settings: MarkdownMasterSettings;
@@ -803,26 +823,6 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.plugin.settings.enableCodeHighlight = value;
                     await this.plugin.saveSettings();
                 }));
-    }
-}
-
-class FormatHistory {
-    private history: string[] = [];
-    private maxHistory = 5;
-
-    addToHistory(content: string) {
-        this.history.unshift(content);
-        if (this.history.length > this.maxHistory) {
-            this.history.pop();
-        }
-    }
-
-    getHistory(): string[] {
-        return this.history;
-    }
-
-    clear() {
-        this.history = [];
     }
 }
 
