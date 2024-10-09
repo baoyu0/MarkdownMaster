@@ -151,23 +151,10 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        // 使用 setInterval 来等待 this.app 被正确初始化
-        const intervalId = setInterval(() => {
-            if (this.app && this.app.workspace) {
-                clearInterval(intervalId);
-                this.initializePlugin();
-            }
-        }, 100); // 每100毫秒检查一次
-
-        // 设置一个超时，以防 this.app 始终未被初始化
-        setTimeout(() => {
-            clearInterval(intervalId);
-            console.error('MarkdownMaster plugin failed to initialize: app or workspace not available');
-        }, 10000); // 10秒后超时
-    }
-
-    private async initializePlugin() {
         await this.loadSettings();
+        this.formatHistory = new FormatHistory();
+
+        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
         this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
             this.showFormatOptions();
@@ -199,19 +186,11 @@ export default class MarkdownMasterPlugin extends Plugin {
             this.registerFileSaveEvent();
         }
 
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
         console.log('MarkdownMaster plugin loaded successfully');
     }
 
-    private async loadSettings() {
-        try {
-            const loadedData = await this.loadData();
-            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.settings = DEFAULT_SETTINGS;
-        }
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
 
     private registerFileOpenEvent() {
