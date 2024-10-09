@@ -152,25 +152,15 @@ export default class MarkdownMasterPlugin extends Plugin {
         console.log('Loading MarkdownMaster plugin');
 
         // 等待应用程序完全加载
-        this.app.workspace.onLayoutReady(async () => {
-            await this.loadSettings();
+        this.app.workspace.onLayoutReady(() => {
             this.initialize();
         });
     }
 
-    private async loadSettings() {
+    private async initialize() {
         try {
-            const loadedData = await this.loadData();
-            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.settings = DEFAULT_SETTINGS;
-        }
-    }
+            await this.loadSettings();
 
-    private initialize() {
-        try {
             this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
                 this.showFormatOptions();
             });
@@ -205,6 +195,17 @@ export default class MarkdownMasterPlugin extends Plugin {
             console.log('MarkdownMaster plugin loaded successfully');
         } catch (error) {
             console.error('Error initializing MarkdownMaster plugin:', error);
+        }
+    }
+
+    private async loadSettings() {
+        try {
+            const loadedData = await this.loadData();
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            this.settings = DEFAULT_SETTINGS;
         }
     }
 
