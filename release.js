@@ -49,8 +49,6 @@ try {
     execSync(`git commit -m "Bump version to ${newVersion}"`, { stdio: 'inherit' });
     execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
     execSync('git push && git push --tags', { stdio: 'inherit' });
-    console.log('Git 操作完成');
-
     console.log(`版本 ${newVersion} 已成功发布！`);
 } catch (error) {
     console.error('发布过程中出错：', error.message);
