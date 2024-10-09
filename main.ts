@@ -152,7 +152,9 @@ export default class MarkdownMasterPlugin extends Plugin {
         console.log('Loading MarkdownMaster plugin');
 
         // 等待应用程序完全加载
-        this.app.workspace.onLayoutReady(this.initialize.bind(this));
+        this.app.workspace.onLayoutReady(() => {
+            this.initialize();
+        });
     }
 
     private async initialize() {
