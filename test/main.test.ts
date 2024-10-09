@@ -183,8 +183,8 @@ describe('MarkdownMasterPlugin', () => {
   test('deleteText removes text based on rules', () => {
     plugin.settings.enableTextDeletion = true;
     plugin.settings.textDeletionRules = [
-      { pattern: 'TODO:', enabled: true },
-      { pattern: '\\[\\[.*?\\]\\]', enabled: true },
+      { pattern: 'TODO:', enabled: true, comment: 'Remove TODO items' },
+      { pattern: '\\[\\[.*?\\]\\]', enabled: true, comment: 'Remove internal links' },
     ];
     const input = "TODO: Remove this\nKeep this\n[[Internal link]]";
     const expected = " Remove this\nKeep this\n";
@@ -194,7 +194,7 @@ describe('MarkdownMasterPlugin', () => {
   test('deleteText adds to deletion history', () => {
     plugin.settings.enableTextDeletion = true;
     plugin.settings.textDeletionRules = [
-      { pattern: 'TODO:', enabled: true },
+      { pattern: 'TODO:', enabled: true, comment: 'Remove TODO items' },
     ];
     const input = "TODO: Remove this";
     plugin.deleteText(input);

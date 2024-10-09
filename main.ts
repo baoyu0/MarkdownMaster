@@ -12,7 +12,7 @@ export interface MarkdownMasterSettings {
     listBulletChar: string;
     listIndentSpaces: number;
     enableLinkCleaning: boolean;
-    linkCleaningRules: Array<{ pattern: string; enabled: boolean }>;
+    linkCleaningRules: Array<{ pattern: string; enabled: boolean; comment: string }>;
     unifyLinkStyle: boolean;
     linkStyle: string;
     enableSymbolDeletion: boolean;
@@ -22,7 +22,7 @@ export interface MarkdownMasterSettings {
     enableTableFormat: boolean;
     enableCodeHighlight: boolean;
     enableTextDeletion: boolean;
-    textDeletionRules: Array<{ pattern: string; enabled: boolean }>;
+    textDeletionRules: Array<{ pattern: string; enabled: boolean; comment: string }>;
     textDeletionHistory: Array<{ pattern: string; deletedText: string; timestamp: number }>;
 }
 
@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     listIndentSpaces: 2,
     enableLinkCleaning: false,
     linkCleaningRules: [
-        { pattern: '\\[([^\\]]+)\\]\\(https?://example\\.com/.*\\)', enabled: true },
+        { pattern: '\\[([^\\]]+)\\]\\(https?://example\\.com/.*\\)', enabled: true, comment: 'Remove links to example.com' },
     ],
     unifyLinkStyle: false,
     linkStyle: 'inline',
@@ -393,6 +393,15 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                             this.plugin.settings.linkCleaningRules[index].pattern = value;
                             await this.plugin.saveSettings();
                         }))
+                    .addText(text => {
+                        (text as any).inputEl.placeholder = 'Comment';
+                        text.setValue(rule.comment)
+                            .onChange(async (value: string) => {
+                                this.plugin.settings.linkCleaningRules[index].comment = value;
+                                await this.plugin.saveSettings();
+                            });
+                        return text;
+                    })
                     .addToggle(toggle => toggle
                         .setValue(rule.enabled)
                         .onChange(async (value) => {
@@ -409,11 +418,11 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
             });
 
             new Setting(containerEl)
-                .setName('Add New Rule')
+                .setName('Add New Link Cleaning Rule')
                 .addButton(button => button
                     .setButtonText('Add')
                     .onClick(async () => {
-                        this.plugin.settings.linkCleaningRules.push({ pattern: '', enabled: true });
+                        this.plugin.settings.linkCleaningRules.push({ pattern: '', enabled: true, comment: '' });
                         await this.plugin.saveSettings();
                         this.display(); // 刷新设置页面
                     }));
@@ -442,6 +451,15 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                             this.plugin.settings.textDeletionRules[index].pattern = value;
                             await this.plugin.saveSettings();
                         }))
+                    .addText(text => {
+                        (text as any).inputEl.placeholder = 'Comment';
+                        text.setValue(rule.comment)
+                            .onChange(async (value: string) => {
+                                this.plugin.settings.textDeletionRules[index].comment = value;
+                                await this.plugin.saveSettings();
+                            });
+                        return text;
+                    })
                     .addToggle(toggle => toggle
                         .setValue(rule.enabled)
                         .onChange(async (value) => {
@@ -458,11 +476,11 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
             });
 
             new Setting(containerEl)
-                .setName('Add New Rule')
+                .setName('Add New Text Deletion Rule')
                 .addButton(button => button
                     .setButtonText('Add')
                     .onClick(async () => {
-                        this.plugin.settings.textDeletionRules.push({ pattern: '', enabled: true });
+                        this.plugin.settings.textDeletionRules.push({ pattern: '', enabled: true, comment: '' });
                         await this.plugin.saveSettings();
                         this.display(); // 刷新设置页面
                     }));
