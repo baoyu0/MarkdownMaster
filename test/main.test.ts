@@ -1,15 +1,35 @@
 import MarkdownMasterPlugin from '../main';
-import { App, Plugin } from 'obsidian';
+import { App, Plugin, MarkdownView, Editor } from 'obsidian';
 import { MarkdownMasterSettings } from '../main'; // 假设 MarkdownMasterSettings 在 main.ts 中定义
+
+jest.mock('obsidian');
 
 describe('MarkdownMasterPlugin', () => {
   let plugin: MarkdownMasterPlugin;
-  let mockApp: App;
+  let mockApp: jest.Mocked<App>;
+  let mockView: jest.Mocked<MarkdownView>;
+  let mockEditor: jest.Mocked<Editor>;
 
   beforeEach(() => {
-    mockApp = {} as App; // 创建一个模拟的 App 对象
+    mockApp = {
+      workspace: {
+        getActiveViewOfType: jest.fn(),
+      },
+    } as unknown as jest.Mocked<App>;
+
+    mockEditor = {
+      getValue: jest.fn(),
+      setValue: jest.fn(),
+    } as unknown as jest.Mocked<Editor>;
+
+    mockView = {
+      editor: mockEditor,
+    } as unknown as jest.Mocked<MarkdownView>;
+
+    (mockApp.workspace.getActiveViewOfType as jest.Mock).mockReturnValue(mockView);
+
     plugin = new MarkdownMasterPlugin();
-    (plugin as any).app = mockApp; // 手动设置 app 属性
+    (plugin as any).app = mockApp;
 
     // 手动设置默认设置
     plugin.settings = {
@@ -63,16 +83,18 @@ describe('MarkdownMasterPlugin', () => {
     const input = "- Item 1\n  - Subitem 1\n- Item 2";
     const expected = "- Item 1\n  - Subitem 1\n- Item 2";
     
-    const result = await plugin.formatMarkdown(input);
-    expect(result).toBe(expected);
+    mockEditor.getValue.mockReturnValue(input);
+    await plugin.formatMarkdown();
+    expect(mockEditor.setValue).toHaveBeenCalledWith(expected);
   });
 
   test('formatMarkdown handles heading formatting', async () => {
     const input = "#Title\n##Subtitle";
     const expected = "# Title\n## Subtitle";
     
-    const result = await plugin.formatMarkdown(input);
-    expect(result).toBe(expected);
+    mockEditor.getValue.mockReturnValue(input);
+    await plugin.formatMarkdown();
+    expect(mockEditor.setValue).toHaveBeenCalledWith(expected);
   });
 
   test('formatMarkdown handles link cleaning', async () => {
@@ -80,8 +102,9 @@ describe('MarkdownMasterPlugin', () => {
     const input = "[Link](http://example.com) [Local](local.md)";
     const expected = "[Link](http://example.com) Local";
     
-    const result = await plugin.formatMarkdown(input);
-    expect(result).toBe(expected);
+    mockEditor.getValue.mockReturnValue(input);
+    await plugin.formatMarkdown();
+    expect(mockEditor.setValue).toHaveBeenCalledWith(expected);
   });
 
   test('formatMarkdown handles link style unification', async () => {
@@ -90,8 +113,9 @@ describe('MarkdownMasterPlugin', () => {
     const input = "[Link](http://example.com)";
     const expected = "[Link][1]\n\n[1]: http://example.com";
     
-    const result = await plugin.formatMarkdown(input);
-    expect(result).toBe(expected);
+    mockEditor.getValue.mockReturnValue(input);
+    await plugin.formatMarkdown();
+    expect(mockEditor.setValue).toHaveBeenCalledWith(expected);
   });
 
   test('formatMarkdown applies custom regex rules', async () => {
@@ -101,8 +125,9 @@ describe('MarkdownMasterPlugin', () => {
     const input = "TODO: Complete this task";
     const expected = "DONE: Complete this task";
     
-    const result = await plugin.formatMarkdown(input);
-    expect(result).toBe(expected);
+    mockEditor.getValue.mockReturnValue(input);
+    await plugin.formatMarkdown();
+    expect(mockEditor.setValue).toHaveBeenCalledWith(expected);
   });
 
   test('formatTables formats tables correctly', () => {
@@ -118,7 +143,8 @@ describe('MarkdownMasterPlugin', () => {
     const input = "```js\nconst x = 1;\n```";
     const expected = "```js\nconst x = 1;\n```";
     
-    const result = await plugin.formatMarkdown(input);
-    expect(result).toBe(expected);
+    mockEditor.getValue.mockReturnValue(input);
+    await plugin.formatMarkdown();
+    expect(mockEditor.setValue).toHaveBeenCalledWith(expected);
   });
 });

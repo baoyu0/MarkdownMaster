@@ -17,7 +17,8 @@
       "ES6",
       "ES7"
     ],
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["jest", "node"]
   },
   "include": [
     "**/*.ts"
