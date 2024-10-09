@@ -127,7 +127,6 @@ export default class MarkdownMasterPlugin extends Plugin {
     async onload() {
         console.log('Loading MarkdownMaster plugin');
 
-        // 等待应用程序完全加载
         await this.loadSettings();
 
         // 使用 app.workspace.onLayoutReady 来确保布局已经准备就绪
@@ -142,7 +141,6 @@ export default class MarkdownMasterPlugin extends Plugin {
                 throw new Error('App or vault is not initialized');
             }
 
-            // 初始化插件
             this.initializePlugin();
 
             console.log('MarkdownMaster plugin loaded successfully');
@@ -219,12 +217,13 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async loadSettings() {
-        if (this.app && this.app.vault) {
-            this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-            // 确保新添加的规则也被加载
+        try {
+            const loadedData = await this.loadData();
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
             this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
-        } else {
-            console.error('Unable to load settings: App or vault is not initialized');
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            this.settings = DEFAULT_SETTINGS;
         }
     }
 
