@@ -152,10 +152,16 @@ export default class MarkdownMasterPlugin extends Plugin {
         console.log('Loading MarkdownMaster plugin');
 
         await this.loadSettings();
-        this.formatHistory = new FormatHistory();
 
         this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
+        // 使用 this.app.workspace.onLayoutReady 来确保 app 和 workspace 已经准备好
+        this.app.workspace.onLayoutReady(() => {
+            this.initialize();
+        });
+    }
+
+    private initialize() {
         this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
             this.showFormatOptions();
         });
