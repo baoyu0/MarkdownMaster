@@ -44,7 +44,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     unifyLinkStyle: false,
     linkStyle: 'inline',
     enableSymbolDeletion: false,
-    symbolsToDelete: '',
+    symbolsToDelete: '*#-',
     preserveSpacesAroundSymbols: true,
     customRegexRules: [],
     enableTableFormat: false,
@@ -243,8 +243,13 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     deleteSymbols(content: string): string {
-        // 实现符号删除逻辑
-        return content;
+        if (!this.settings.enableSymbolDeletion || !this.settings.symbolsToDelete) {
+            return content;
+        }
+
+        const escapedSymbols = this.settings.symbolsToDelete.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const regex = new RegExp(`[${escapedSymbols}]`, 'g');
+        return content.replace(regex, '');
     }
 
     highlightCode(content: string): string {
@@ -258,17 +263,23 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
 
         this.settings.textDeletionRules.forEach(rule => {
-            if (rule.enabled) {
-                const regex = new RegExp(rule.pattern, 'g');
-                content = content.replace(regex, (match) => {
-                    // 保存删除的文本到历史记录
-                    this.settings.textDeletionHistory.push({
-                        pattern: rule.pattern,
-                        deletedText: match,
-                        timestamp: Date.now()
+            if (rule.enabled && rule.pattern) {
+                try {
+                    const regex = new RegExp(rule.pattern, 'g');
+                    content = content.replace(regex, (match) => {
+                        // 保存删除的文本到历史记录
+                        this.settings.textDeletionHistory.push({
+                            pattern: rule.pattern,
+                            deletedText: match,
+                            timestamp: Date.now()
+                        });
+                        return '';
                     });
-                    return '';
-                });
+                } catch (error) {
+                    console.error(`Invalid regex pattern: ${rule.pattern}`, error);
+                    // 可以选择在这里显示一个通知给用户
+                    new Notice(`Invalid regex pattern: ${rule.pattern}`);
+                }
             }
         });
 
@@ -448,8 +459,13 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     .addText(text => text
                         .setValue(rule.pattern)
                         .onChange(async (value: string) => {
-                            this.plugin.settings.textDeletionRules[index].pattern = value;
-                            await this.plugin.saveSettings();
+                            try {
+                                new RegExp(value); // 测试正则表达式是否有效
+                                this.plugin.settings.textDeletionRules[index].pattern = value;
+                                await this.plugin.saveSettings();
+                            } catch (error) {
+                                new Notice('Invalid regex pattern');
+                            }
                         }))
                     .addText(text => {
                         (text as any).inputEl.placeholder = 'Comment';
@@ -483,6 +499,29 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                         this.plugin.settings.textDeletionRules.push({ pattern: '', enabled: true, comment: '' });
                         await this.plugin.saveSettings();
                         this.display(); // 刷新设置页面
+                    }));
+        }
+
+        new Setting(containerEl)
+            .setName('Enable Symbol Deletion')
+            .setDesc('Delete specific symbols from the text')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableSymbolDeletion)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableSymbolDeletion = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // 刷新设置页面
+                }));
+
+        if (this.plugin.settings.enableSymbolDeletion) {
+            new Setting(containerEl)
+                .setName('Symbols to Delete')
+                .setDesc('Enter symbols to be deleted (without spaces)')
+                .addText(text => text
+                    .setValue(this.plugin.settings.symbolsToDelete)
+                    .onChange(async (value) => {
+                        this.plugin.settings.symbolsToDelete = value;
+                        await this.plugin.saveSettings();
                     }));
         }
 
