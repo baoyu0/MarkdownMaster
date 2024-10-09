@@ -152,15 +152,23 @@ export default class MarkdownMasterPlugin extends Plugin {
         console.log('Loading MarkdownMaster plugin');
 
         // 等待应用程序完全加载
-        this.app.workspace.onLayoutReady(() => {
-            this.initialize();
-        });
+        await this.loadSettings();
+
+        // 使用 setTimeout 来确保 workspace 已经准备好
+        setTimeout(() => {
+            if (this.app.workspace) {
+                this.app.workspace.onLayoutReady(() => {
+                    this.initialize();
+                });
+            } else {
+                console.error('Workspace is not available');
+                this.initialize(); // 尝试直接初始化
+            }
+        }, 0);
     }
 
     private async initialize() {
         try {
-            await this.loadSettings();
-
             this.addRibbonIcon('pencil', 'Markdown Master', (evt: MouseEvent) => {
                 this.showFormatOptions();
             });
