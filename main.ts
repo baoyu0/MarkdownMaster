@@ -142,8 +142,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     private lastUnformattedContent: string = '';
     private formatHistory: FormatHistory;
 
-    constructor(app: App, manifest: any) {
-        super(app, manifest);
+    constructor() {
+        super();
         this.settings = DEFAULT_SETTINGS;
         this.formatHistory = new FormatHistory();
     }
