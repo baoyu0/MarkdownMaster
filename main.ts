@@ -156,8 +156,19 @@ export default class MarkdownMasterPlugin extends Plugin {
         const sourceLevel = headingLevels[this.settings.sourceHeadingLevel as keyof typeof headingLevels];
         const targetLevel = headingLevels[this.settings.targetHeadingLevel as keyof typeof headingLevels];
         
-        const regex = new RegExp(`^${sourceLevel}\\s(.+)$`, 'gm');
-        return content.replace(regex, `${targetLevel} $1`);
+        if (this.settings.recursiveHeadingConversion) {
+            // 递归转换所有级别的标题
+            const levelDiff = Object.keys(headingLevels).indexOf(this.settings.targetHeadingLevel) - 
+                              Object.keys(headingLevels).indexOf(this.settings.sourceHeadingLevel);
+            return content.replace(/^(#{1,6})\s(.+)$/gm, (match, hashes, title) => {
+                const newLevel = Math.max(1, Math.min(6, hashes.length + levelDiff));
+                return `${'#'.repeat(newLevel)} ${title}`;
+            });
+        } else {
+            // 只转换指定级别的标题
+            const regex = new RegExp(`^${sourceLevel}\\s(.+)$`, 'gm');
+            return content.replace(regex, `${targetLevel} $1`);
+        }
     }
 
     formatLists(content: string): string {
@@ -282,6 +293,46 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.plugin.settings.enableHeadingConversion = value;
                     await this.plugin.saveSettings();
                 }));
+
+        if (this.plugin.settings.enableHeadingConversion) {
+            new Setting(containerEl)
+                .setName('Source Heading Level')
+                .setDesc('Select the source heading level for conversion')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'h1': 'H1', 'h2': 'H2', 'h3': 'H3',
+                        'h4': 'H4', 'h5': 'H5', 'h6': 'H6'
+                    })
+                    .setValue(this.plugin.settings.sourceHeadingLevel)
+                    .onChange(async (value) => {
+                        this.plugin.settings.sourceHeadingLevel = value;
+                        await this.plugin.saveSettings();
+                    }));
+
+            new Setting(containerEl)
+                .setName('Target Heading Level')
+                .setDesc('Select the target heading level for conversion')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'h1': 'H1', 'h2': 'H2', 'h3': 'H3',
+                        'h4': 'H4', 'h5': 'H5', 'h6': 'H6'
+                    })
+                    .setValue(this.plugin.settings.targetHeadingLevel)
+                    .onChange(async (value) => {
+                        this.plugin.settings.targetHeadingLevel = value;
+                        await this.plugin.saveSettings();
+                    }));
+
+            new Setting(containerEl)
+                .setName('Recursive Heading Conversion')
+                .setDesc('Convert all subheadings recursively')
+                .addToggle(toggle => toggle
+                    .setValue(this.plugin.settings.recursiveHeadingConversion)
+                    .onChange(async (value) => {
+                        this.plugin.settings.recursiveHeadingConversion = value;
+                        await this.plugin.saveSettings();
+                    }));
+        }
 
         // 添加更多设置项...
     }
