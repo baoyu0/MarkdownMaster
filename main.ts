@@ -623,6 +623,7 @@ class FormatPreviewModal extends Modal {
 
     private renderMarkdown(content: string, container: HTMLElement) {
         const tempEl = document.createElement('div');
+        // 使用 Obsidian 的 MarkdownRenderer 来渲染 Markdown
         (this.app as any).internalPlugins.plugins['markdown'].cm6.editorInfoByPath[''].renderMarkdown(content, tempEl);
         container.appendChild(tempEl);
     }
