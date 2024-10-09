@@ -27,6 +27,7 @@ describe('MarkdownMasterPlugin', () => {
       customRegexRules: [],
       enableTableFormat: false,
       enableCodeHighlight: false,
+      formatRules: [], // 添加 formatRules 属性
     };
   });
 

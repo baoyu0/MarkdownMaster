@@ -119,3 +119,35 @@
 .markdown-master-history-item:hover {
     background-color: var(--background-secondary);
 }
+
+/* 添加以下新样式 */
+.markdown-master-rule-list {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 16px;
+}
+
+.markdown-master-rule-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    margin-bottom: 8px;
+    background-color: var(--background-secondary);
+    border-radius: 4px;
+    cursor: move;
+}
+
+.markdown-master-rule-item:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-master-rule-item span {
+    flex-grow: 1;
+    margin-right: 8px;
+}
+
+.markdown-master-rule-item .setting-item {
+    flex-shrink: 0;
+}

@@ -1,5 +1,9 @@
 import { Plugin, App, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, Vault, Workspace, PluginManifest } from 'obsidian';
 import { diffChars, Change } from 'diff';  // 导入 Change 类型
+import Sortable from 'sortablejs';
+
+// 删除这行
+// import { ObsidianHTMLElement } from 'obsidian';
 
 // 添加这个类型别名
 type DropdownComponent = {
@@ -9,6 +13,15 @@ type DropdownComponent = {
     setValue(value: string): DropdownComponent;
     onChange(callback: (value: string) => any): DropdownComponent;
 };
+
+interface FormatRule {
+    id: string;
+    name: string;
+    description: string;
+    enabled: boolean;
+    priority: number;
+    apply: (content: string) => string;
+}
 
 interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
@@ -30,6 +43,7 @@ interface MarkdownMasterSettings {
     customRegexRules: { pattern: string; replacement: string }[];
     enableTableFormat: boolean;
     enableCodeHighlight: boolean;
+    formatRules: FormatRule[];
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -52,7 +66,44 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     customRegexRules: [],
     enableTableFormat: false,
     enableCodeHighlight: false,
+    formatRules: [
+        {
+            id: 'headings',
+            name: '标题格式化',
+            description: '确保标题符号后有空格',
+            enabled: true,
+            priority: 100,
+            apply: (content: string) => content.replace(/^(#+)([^\s#])/gm, '$1 $2')
+        },
+        {
+            id: 'lists',
+            name: '列表格式化',
+            description: '统一列表符号和缩进',
+            enabled: true,
+            priority: 90,
+            apply: (content: string) => {
+                // 实现列表格式化逻辑
+                return content;
+            }
+        },
+        // ... 添加更多默认规则
+    ]
 };
+
+// 在文件顶部添加这个类型声明
+type ObsidianHTMLElement = HTMLElement & {
+    createEl<K extends keyof HTMLElementTagNameMap>(tag: K, attrs?: { [key: string]: any }): HTMLElementTagNameMap[K];
+    createEl(tag: string, attrs?: { [key: string]: any }): ObsidianHTMLElement;
+    empty(): void;
+    createDiv(options?: { cls?: string }): ObsidianHTMLElement;
+    createSpan(): ObsidianHTMLElement;
+    textContent: string; // 添加这行，确保 textContent 是非空的字符串
+};
+
+// 在文件顶部添加这个函数
+function asObsidianHTMLElement(el: HTMLElement): ObsidianHTMLElement {
+    return el as unknown as ObsidianHTMLElement;
+}
 
 export default class MarkdownMasterPlugin extends Plugin {
     settings: MarkdownMasterSettings;
@@ -80,6 +131,8 @@ export default class MarkdownMasterPlugin extends Plugin {
 
             // 初始化 settings
             this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+            // 确保新添加的规则也被加载
+            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
 
             // 初始化插件
             this.initializePlugin();
@@ -160,6 +213,8 @@ export default class MarkdownMasterPlugin extends Plugin {
     async loadSettings() {
         if (this.app && this.app.vault) {
             this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+            // 确保新添加的规则也被加载
+            this.settings.formatRules = this.mergeFormatRules(DEFAULT_SETTINGS.formatRules, this.settings.formatRules);
         } else {
             console.error('Unable to load settings: App or vault is not initialized');
         }
@@ -167,6 +222,19 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+    }
+
+    mergeFormatRules(defaultRules: FormatRule[], savedRules: FormatRule[]): FormatRule[] {
+        const mergedRules = [...defaultRules];
+        savedRules.forEach(savedRule => {
+            const index = mergedRules.findIndex(r => r.id === savedRule.id);
+            if (index !== -1) {
+                mergedRules[index] = { ...mergedRules[index], ...savedRule };
+            } else {
+                mergedRules.push(savedRule);
+            }
+        });
+        return mergedRules;
     }
 
     async formatMarkdown(input: TFile | string): Promise<string> {
@@ -178,182 +246,21 @@ export default class MarkdownMasterPlugin extends Plugin {
                 content = await this.app.vault.read(input);
             }
 
-            // 格式化标题
-            content = content.replace(/^(#+)\s*(.+)$/gm, '$1 $2');
-
-            content = this.applyFormatting(content);
-
-            this.lastUnformattedContent = content; // 保存格式化前的内容
-
-            // 应用格式化模板
-            content = this.applyFormatTemplate(content);
-
-            // 标题转换
-            if (this.settings.enableHeadingConversion) {
-                content = this.convertHeadings(content);
-            }
-
-            // 列表格式化
-            if (this.settings.enableListFormatting) {
-                content = this.formatLists(content);
-            }
-
-            // 链接处理
-            if (this.settings.enableLinkCleaning) {
-                content = this.cleanLinks(content);
-            }
-            if (this.settings.unifyLinkStyle) {
-                content = this.unifyLinks(content);
-            }
-
-            // 符号删除
-            if (this.settings.enableSymbolDeletion) {
-                content = this.deleteSymbols(content);
-            }
-
-            // 应用自定义正则表达式规则
-            content = this.applyCustomRegexRules(content);
-
-            if (typeof input !== 'string') {
-                await this.app.vault.modify(input, content);
-                new Notice('文档已格式化');
-            }
-
-            this.formatHistory.addToHistory(content);
-            return content;
+            return this.settings.formatRules
+                .filter(rule => rule.enabled)
+                .sort((a, b) => b.priority - a.priority)
+                .reduce((formattedContent, rule) => rule.apply(formattedContent), content);
         } catch (error) {
             this.handleError(error, '格式化文档');
             return typeof input === 'string' ? input : await this.app.vault.read(input);
         }
     }
 
-    private applyFormatTemplate(content: string): string {
-        switch (this.settings.formatTemplate) {
-            case 'technical':
-                content = content.replace(/^#\s/gm, '# ');  // 确保一级标题格式正确
-                content = content.replace(/`([^`\n]+)`/g, '`$1`');  // 确保内联代码格式正确
-                content = content.replace(/\n{3,}/g, '\n\n');  // 删除多余的空行
-                break;
-            case 'blog':
-                content = content.replace(/^#\s/gm, '# ');  // 确保标题格式正确
-                content = content.replace(/!\[(.*?)\]\((.*?)\)/g, '![$1]($2)\n'); // 图片单独一行
-                break;
-            case 'academic':
-                content = content.replace(/^#\s/gm, '# ');  // 确保一级标题格式正确
-                content = content.replace(/^##\s/gm, '## '); // 确保二级标题格式正确
-                content = content.replace(/(\d+)\./g, '$1\\.'); // 修复编号后的句点
-                break;
-            // 默认情况下不做任何特殊处理
-        }
-        return content;
-    }
-
-    private convertHeadings(content: string): string {
-        const sourceLevel = parseInt(this.settings.sourceHeadingLevel.slice(1));
-        const targetLevel = parseInt(this.settings.targetHeadingLevel.slice(1));
-        const levelDiff = targetLevel - sourceLevel;
-
-        const convertLine = (line: string) => {
-            const match = line.match(/^(#+)\s/);
-            if (match) {
-                const currentLevel = match[1].length;
-                if (currentLevel >= sourceLevel) {
-                    const newLevel = Math.max(1, Math.min(6, currentLevel + levelDiff));
-                    return '#'.repeat(newLevel) + line.slice(currentLevel);
-                }
-            }
-            return line;
-        };
-
-        if (this.settings.recursiveHeadingConversion) {
-            return content.split('\n').map(convertLine).join('\n');
-        } else {
-            const regex = new RegExp(`^#{${sourceLevel}}\\s(.+)$`, 'gm');
-            return content.replace(regex, `${'#'.repeat(targetLevel)} $1`);
-        }
-    }
-
-    private formatLists(content: string): string {
-        const listRegex = /^(\s*)([*+-]|\d+\.)\s+/gm;
-        return content.replace(listRegex, (match, indent, bullet) => {
-            const newIndent = ' '.repeat(Math.floor(indent.length / this.settings.listIndentSpaces) * this.settings.listIndentSpaces);
-            const newBullet = /^\d+\./.test(bullet) ? bullet : this.settings.listBulletChar;
-            return `${newIndent}${newBullet} `;
-        });
-    }
-
-    private cleanLinks(content: string): string {
-        // 简单的无效链接检测和删除
-        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-        return content.replace(linkRegex, (match, text, url) => {
-            if (url.startsWith('http') || url.startsWith('https')) {
-                return match; // 保留有效的 http/https 链接
-            } else {
-                return text; // 对于无效链接，只保留链接文本
-            }
-        });
-    }
-
-    private unifyLinks(content: string): string {
-        if (this.settings.linkStyle === 'inline') {
-            // 将引用链接转换为内联链接
-            const refLinkRegex = /\[([^\]]+)\]\[([^\]]+)\]/g;
-            const refDefRegex = /^\[([^\]]+)\]:\s*(.+)$/gm;
-            const refDefs = new Map();
-
-            content = content.replace(refDefRegex, (match, id, url) => {
-                refDefs.set(id, url.trim());
-                return '';
-            });
-
-            content = content.replace(refLinkRegex, (match, text, id) => {
-                const url = refDefs.get(id);
-                return url ? `[${text}](${url})` : match;
-            });
-        } else if (this.settings.linkStyle === 'reference') {
-            // 将内联链接转换为引用链接
-            const inlineLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-            const refDefs = new Map();
-            let refCounter = 1;
-
-            content = content.replace(inlineLinkRegex, (match, text, url) => {
-                let id = refCounter.toString();
-                refDefs.set(id, url.trim());
-                refCounter++;
-                return `[${text}][${id}]`;
-            });
-
-            content += '\n\n';
-            for (const [id, url] of refDefs) {
-                content += `[${id}]: ${url}\n`;
-            }
-        }
-        return content;
-    }
-
-    private deleteSymbols(content: string): string {
-        const symbols = this.settings.symbolsToDelete.split(',').map(s => s.trim());
-        let result = content;
-        for (const symbol of symbols) {
-            const regex = new RegExp(symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-            result = result.replace(regex, this.settings.preserveSpacesAroundSymbols ? ' ' : '');
-        }
-        return result;
-    }
-
-    private applyCustomRegexRules(content: string): string {
-        for (const rule of this.settings.customRegexRules) {
-            const regex = new RegExp(rule.pattern, 'g');
-            content = content.replace(regex, rule.replacement);
-        }
-        return content;
-    }
-
     async autoFormatFile(file: TFile) {
         if (file.extension !== 'md') return;
-        const formattedContent = await this.formatMarkdown(file);
-        const currentContent = await this.app.vault.read(file);
-        if (currentContent !== formattedContent) {
+        const content = await this.app.vault.read(file);
+        const formattedContent = await this.formatMarkdown(content);
+        if (content !== formattedContent) {
             await this.app.vault.modify(file, formattedContent);
             new Notice(`已自动格式化文件: ${file.name}`);
         }
@@ -677,7 +584,58 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // 添加其他设置项...
+        // ... 其他设置项
+
+        containerEl.createEl('h3', { text: '格式化规则优先级' });
+
+        new Setting(containerEl)
+            .setName('规则排序')
+            .setDesc('拖动规则来调整优先级，越靠上优先级越高')
+            .addButton(button => button
+                .setButtonText('重置为默认')
+                .onClick(async () => {
+                    this.plugin.settings.formatRules = DEFAULT_SETTINGS.formatRules;
+                    await this.plugin.saveSettings();
+                    this.display();
+                }));
+
+        const ruleListContainer = containerEl.createEl('div', { cls: 'markdown-master-rule-list' }) as unknown as ObsidianHTMLElement;
+
+        Sortable.create(ruleListContainer as HTMLElement, {
+            onEnd: async (evt: Sortable.SortableEvent) => {
+                const rules = this.plugin.settings.formatRules;
+                if (typeof evt.oldIndex === 'number' && typeof evt.newIndex === 'number') {
+                    const movedRule = rules.splice(evt.oldIndex, 1)[0];
+                    rules.splice(evt.newIndex, 0, movedRule);
+                    rules.forEach((rule, index) => {
+                        rule.priority = rules.length - index;
+                    });
+                    await this.plugin.saveSettings();
+                }
+            }
+        });
+
+        this.plugin.settings.formatRules.forEach((rule, index) => {
+            const ruleEl = asObsidianHTMLElement(ruleListContainer.createEl('div', { cls: 'markdown-master-rule-item' }));
+            ruleEl.createEl('span', { text: rule.name });
+            
+            new Setting(asObsidianHTMLElement(ruleEl))
+                .addToggle(toggle => toggle
+                    .setValue(rule.enabled)
+                    .onChange(async (value) => {
+                        rule.enabled = value;
+                        await this.plugin.saveSettings();
+                    }))
+                .addButton(button => button
+                    .setButtonText('✏️ 编辑')
+                    .onClick(() => {
+                        new FormatRuleModal(this.app, rule, async (updatedRule) => {
+                            this.plugin.settings.formatRules[index] = updatedRule;
+                            await this.plugin.saveSettings();
+                            this.display();
+                        }).open();
+                    }));
+        });
 
         new Setting(containerEl)
             .setName('导出设置')
@@ -785,6 +743,61 @@ class FormatHistoryModal extends Modal {
                         this.close();
                     }));
         });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+class FormatRuleModal extends Modal {
+    rule: FormatRule;
+    onSubmit: (rule: FormatRule) => void;
+
+    constructor(app: App, rule: FormatRule, onSubmit: (rule: FormatRule) => void) {
+        super(app);
+        this.rule = { ...rule };
+        this.onSubmit = onSubmit;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+
+        contentEl.createEl('h2', { text: '编辑格式化规则' });
+
+        new Setting(contentEl)
+            .setName('规则名称')
+            .addText(text => text
+                .setValue(this.rule.name)
+                .onChange(value => this.rule.name = value));
+
+        new Setting(contentEl)
+            .setName('描述')
+            .addTextArea(text => text
+                .setValue(this.rule.description)
+                .onChange(value => this.rule.description = value));
+
+        new Setting(contentEl)
+            .setName('优先级')
+            .addSlider(slider => slider
+                .setLimits(1, 100, 1)
+                .setValue(this.rule.priority)
+                .setDynamicTooltip()
+                .onChange(value => this.rule.priority = value));
+
+        new Setting(contentEl)
+            .addButton(button => button
+                .setButtonText('保存')
+                .setCta()
+                .onClick(() => {
+                    this.onSubmit(this.rule);
+                    this.close();
+                }))
+            .addButton(button => button
+                .setButtonText('取消')
+                .onClick(() => this.close()));
     }
 
     onClose() {

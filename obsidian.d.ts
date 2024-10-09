@@ -63,6 +63,8 @@ declare module "obsidian" {
         addToggle(cb: (toggle: ToggleComponent) => any): this;
         addTextArea(cb: (text: TextAreaComponent) => any): this;
         addDropdown(cb: (dropdown: DropdownComponent) => any): this; // 添加这一行
+        addText(cb: (text: TextComponent) => any): this;
+        addSlider(cb: (slider: SliderComponent) => any): this;
     }
 
     export interface ButtonComponent {
@@ -80,6 +82,20 @@ declare module "obsidian" {
         setValue(value: string): this;
         onChange(callback: (value: string) => void): this;
         setPlaceholder(placeholder: string): this;  // 添加这一行
+    }
+
+    export interface TextComponent extends BaseComponent {
+        setValue(value: string): this;
+        getValue(): string;
+        onChange(callback: (value: string) => any): this;
+    }
+
+    export interface SliderComponent extends BaseComponent {
+        setValue(value: number): this;
+        getValue(): number;
+        setLimits(min: number, max: number, step: number): this;
+        setDynamicTooltip(): this;
+        onChange(callback: (value: number) => any): this;
     }
 
     export class Notice {
@@ -100,7 +116,8 @@ declare module "obsidian" {
     }
 
     export interface HTMLElement {
-        createEl(tag: string, attr?: { [key: string]: any }): HTMLElement;
+        createEl<K extends keyof HTMLElementTagNameMap>(tag: K, attrs?: { [key: string]: any }): HTMLElementTagNameMap[K];
+        createEl(tag: string, attrs?: { [key: string]: any }): HTMLElement;
         empty(): void;
         createDiv(options?: { cls?: string }): HTMLElement;
         createSpan(): HTMLElement;
@@ -108,6 +125,15 @@ declare module "obsidian" {
         textContent: string;  // 添加这一行
         className: string;  // 添加这一行
     }
+
+    // 添加这个新的类型声明
+    export type ObsidianHTMLElement = HTMLElement & {
+        createEl<K extends keyof HTMLElementTagNameMap>(tag: K, attrs?: { [key: string]: any }): HTMLElementTagNameMap[K];
+        createEl(tag: string, attrs?: { [key: string]: any }): HTMLElement;
+        empty(): void;
+        createDiv(options?: { cls?: string }): HTMLElement;
+        createSpan(): HTMLElement;
+    };
 
     export type Constructor<T> = new (...args: any[]) => T;
 
