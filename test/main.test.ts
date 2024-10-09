@@ -1,5 +1,5 @@
 import MarkdownMasterPlugin from '../main';
-import { App, Plugin, MarkdownView, Editor } from 'obsidian';
+import { App, MarkdownView, Editor } from 'obsidian';
 import { MarkdownMasterSettings } from '../main'; // 假设 MarkdownMasterSettings 在 main.ts 中定义
 
 jest.mock('obsidian');
@@ -146,5 +146,33 @@ describe('MarkdownMasterPlugin', () => {
     mockEditor.getValue.mockReturnValue(input);
     await plugin.formatMarkdown();
     expect(mockEditor.setValue).toHaveBeenCalledWith(expected);
+  });
+
+  test('convertHeadings converts headings correctly', () => {
+    plugin.settings.sourceHeadingLevel = 'h2';
+    plugin.settings.targetHeadingLevel = 'h1';
+    const input = "## Heading\n### Subheading";
+    const expected = "# Heading\n### Subheading";
+    expect(plugin.convertHeadings(input)).toBe(expected);
+  });
+
+  test('cleanLinks removes empty and duplicate links', () => {
+    const input = "[Empty]()\n[Duplicate](http://example.com)\n[Duplicate](http://example.com)";
+    const expected = "Empty\n[Duplicate](http://example.com)\nDuplicate";
+    expect(plugin.cleanLinks(input)).toBe(expected);
+  });
+
+  test('unifyLinkStyle converts inline links to reference links', () => {
+    plugin.settings.linkStyle = 'reference';
+    const input = "This is an [inline link](http://example.com).";
+    const expected = "This is an [inline link][1].\n\n[1]: http://example.com\n";
+    expect(plugin.unifyLinkStyle(input)).toBe(expected);
+  });
+
+  test('unifyLinkStyle converts reference links to inline links', () => {
+    plugin.settings.linkStyle = 'inline';
+    const input = "This is a [reference link][1].\n\n[1]: http://example.com";
+    const expected = "This is a [reference link](http://example.com).\n\n";
+    expect(plugin.unifyLinkStyle(input)).toBe(expected);
   });
 });

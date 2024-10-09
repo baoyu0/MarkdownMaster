@@ -145,8 +145,19 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     convertHeadings(content: string): string {
-        // 实现标题转换逻辑
-        return content;
+        const headingLevels = {
+            'h1': '#',
+            'h2': '##',
+            'h3': '###',
+            'h4': '####',
+            'h5': '#####',
+            'h6': '######'
+        };
+        const sourceLevel = headingLevels[this.settings.sourceHeadingLevel as keyof typeof headingLevels];
+        const targetLevel = headingLevels[this.settings.targetHeadingLevel as keyof typeof headingLevels];
+        
+        const regex = new RegExp(`^${sourceLevel}\\s(.+)$`, 'gm');
+        return content.replace(regex, `${targetLevel} $1`);
     }
 
     formatLists(content: string): string {
@@ -164,12 +175,52 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     cleanLinks(content: string): string {
-        // 实现链接清理逻辑
-        return content;
+        // 移除空链接
+        content = content.replace(/\[([^\]]+)\]\(\s*\)/g, '$1');
+        
+        // 移除重复的链接
+        const linkMap = new Map();
+        return content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+            if (linkMap.has(url)) {
+                return text;
+            } else {
+                linkMap.set(url, true);
+                return match;
+            }
+        });
     }
 
     unifyLinkStyle(content: string): string {
-        // 实现链接样式统一逻辑
+        if (this.settings.linkStyle === 'reference') {
+            let referenceLinks: {[key: string]: string} = {};
+            let linkCount = 1;
+            
+            // 将内联链接转换为引用链接
+            content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+                if (!referenceLinks[url]) {
+                    referenceLinks[url] = `[${linkCount}]`;
+                    linkCount++;
+                }
+                return `[${text}]${referenceLinks[url]}`;
+            });
+            
+            // 在文档末尾添加引用链接
+            content += '\n\n';
+            for (let url in referenceLinks) {
+                content += `${referenceLinks[url]}: ${url}\n`;
+            }
+        } else {
+            // 将引用链接转换为内联链接
+            let referenceLinks: {[key: string]: string} = {};
+            content = content.replace(/^\[([^\]]+)\]:\s*(.+)$/gm, (match, id, url) => {
+                referenceLinks[id] = url.trim();
+                return '';
+            });
+            
+            content = content.replace(/\[([^\]]+)\]\[([^\]]+)\]/g, (match, text, id) => {
+                return `[${text}](${referenceLinks[id] || ''})`;
+            });
+        }
         return content;
     }
 
