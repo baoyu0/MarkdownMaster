@@ -6,7 +6,7 @@ const path = require('path');
 const newVersion = process.argv[2];
 
 if (!newVersion) {
-    console.error('请提供新的版本号，例如: npm run release 1.2.4');
+    console.error('请提供新的版本号，例如: npm run release 1.7.3');
     process.exit(1);
 }
 
@@ -17,18 +17,25 @@ if (!/^\d+\.\d+\.\d+$/.test(newVersion)) {
 }
 
 try {
-    // 检查工作目录是否干净
-    const status = execSync('git status --porcelain').toString().trim();
-    if (status) {
-        console.error('工作目录不干净。请提交或存储您的更改后再运行此脚本。');
-        process.exit(1);
-    }
-
-    // 运行版本更新脚本
+    // 更新版本号
     execSync(`node update-version.js ${newVersion}`, { stdio: 'inherit' });
 
     // 构建项目
     execSync('npm run build', { stdio: 'inherit' });
+
+    // 创建发布目录
+    const releaseDir = path.join(__dirname, 'release');
+    if (fs.existsSync(releaseDir)) {
+        fs.rmdirSync(releaseDir, { recursive: true });
+    }
+    fs.mkdirSync(releaseDir);
+
+    // 复制必要文件到发布目录
+    fs.copyFileSync('main.js', path.join(releaseDir, 'main.js'));
+    fs.copyFileSync('manifest.json', path.join(releaseDir, 'manifest.json'));
+    if (fs.existsSync('styles.css')) {
+        fs.copyFileSync('styles.css', path.join(releaseDir, 'styles.css'));
+    }
 
     // Git 操作
     execSync('git add .', { stdio: 'inherit' });
