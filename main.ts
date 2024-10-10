@@ -15,7 +15,6 @@ interface FormatContentOptions {
     linkRemovalRegex: string;
     linkRemovalRegexDescription?: string;
     additionalLinkRemovalRegexes?: Array<{ regex: string; description: string }>;
-    enableReferenceRemoval: boolean;
     // ... 其他内容相关选项 ...
 }
 
@@ -46,7 +45,6 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
             enableLinkRemoval: true,
             linkRemovalRegex: '\\[\\d+\\]\\s+(https?:\\/\\/\\S+)',
             additionalLinkRemovalRegexes: [],
-            enableReferenceRemoval: true,
         },
         structure: {
             enableHeadingConversion: true,
@@ -209,9 +207,6 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         if (formatOptions.style.enableBoldRemoval) {
             formatted = formatted.replace(/\*\*/g, '');
-        }
-        if (formatOptions.content.enableReferenceRemoval) {
-            formatted = formatted.replace(/\[\d+\]/g, '');
         }
 
         formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
@@ -611,17 +606,6 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         updateLinkRemovalSettingState(this.plugin.settings.formatOptions.content.enableLinkRemoval);
 
         // 保留其他内容格式化选项
-        new Setting(containerEl)
-            .setName('启用引用删除')
-            .setDesc('删除所有数字引用标记')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.formatOptions.content.enableReferenceRemoval)
-                .onChange(async (value) => {
-                    this.plugin.settings.formatOptions.content.enableReferenceRemoval = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // ... 可以继续添加其他内容格式化选项
     }
 
     addStructureFormatSettings(containerEl: ObsidianHTMLElement) {
