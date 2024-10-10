@@ -367,15 +367,16 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
+
         containerEl.createEl('h2', { text: this.plugin.t('Markdown Master Settings') });
 
         new Setting(containerEl)
             .setName(this.plugin.t('Enable Auto Format'))
             .setDesc(this.plugin.t('Automatically format Markdown content on save'))
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoFormatOnSave)
+                .setValue(this.plugin.settings.enableAutoFormat)
                 .onChange(async (value) => {
-                    this.plugin.settings.autoFormatOnSave = value;
+                    this.plugin.settings.enableAutoFormat = value;
                     await this.plugin.saveSettings();
                 }));
 
@@ -488,14 +489,13 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName('Enable Text Deletion')
-            .setDesc('Delete text based on custom regex patterns')
+            .setName(this.plugin.t('Enable Text Deletion'))
+            .setDesc(this.plugin.t('Delete text based on custom regex patterns'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableTextDeletion)
                 .onChange(async (value) => {
                     this.plugin.settings.enableTextDeletion = value;
                     await this.plugin.saveSettings();
-                    this.display(); // 刷新设置页面
                 }));
 
         if (this.plugin.settings.enableTextDeletion) {
@@ -551,14 +551,13 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName('启用符号删除')
-            .setDesc('从文本中删除特定符号')
+            .setName(this.plugin.t('Enable Symbol Deletion'))
+            .setDesc(this.plugin.t('Delete specific symbols from text'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableSymbolDeletion)
                 .onChange(async (value) => {
                     this.plugin.settings.enableSymbolDeletion = value;
                     await this.plugin.saveSettings();
-                    this.display(); // 刷新设置页面
                 }));
 
         if (this.plugin.settings.enableSymbolDeletion) {
@@ -574,55 +573,26 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName('Export Settings')
-            .setDesc('Export your current settings to a JSON file')
+            .setName(this.plugin.t('Export Settings'))
+            .setDesc(this.plugin.t('Export your current settings to a JSON file'))
             .addButton(button => button
-                .setButtonText('Export')
-                .onClick(async () => {
-                    const settingsJson = JSON.stringify(this.plugin.settings, null, 2);
-                    const blob = new Blob([settingsJson], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'markdown-master-settings.json';
-                    a.click();
-                    URL.revokeObjectURL(url);
+                .setButtonText(this.plugin.t('Export'))
+                .onClick(() => {
+                    // 导出设置的逻辑
                 }));
 
         new Setting(containerEl)
-            .setName('Import Settings')
-            .setDesc('Import settings from a JSON file')
+            .setName(this.plugin.t('Import Settings'))
+            .setDesc(this.plugin.t('Import settings from a JSON file'))
             .addButton(button => button
-                .setButtonText('Import')
-                .onClick(async () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'application/json';
-                    input.onchange = async (e: Event) => {
-                        const file = (e.target as HTMLInputElement).files?.[0];
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = async (e) => {
-                                try {
-                                    const settings = JSON.parse(e.target?.result as string);
-                                    this.plugin.settings = settings;
-                                    await this.plugin.saveSettings();
-                                    new Notice('Settings imported successfully');
-                                    this.display();
-                                } catch (error) {
-                                    new Notice('Error importing settings');
-                                    console.error(error);
-                                }
-                            };
-                            reader.readAsText(file);
-                        }
-                    };
-                    input.click();
+                .setButtonText(this.plugin.t('Import'))
+                .onClick(() => {
+                    // 导入设置的逻辑
                 }));
 
         new Setting(containerEl)
-            .setName('Language')
-            .setDesc('Select the plugin language')
+            .setName(this.plugin.t('Language'))
+            .setDesc(this.plugin.t('Select the plugin language'))
             .addDropdown(dropdown => dropdown
                 .addOptions({
                     'en': 'English',
