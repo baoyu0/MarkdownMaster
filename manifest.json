@@ -1,7 +1,7 @@
 {
   "id": "markdown-master",
   "name": "Markdown Master",
-  "version": "1.7.5",
+  "version": "1.7.6",
   "minAppVersion": "0.15.0",
   "description": "一键格式化Markdown文件，提供预览、撤销、批量处理、自定义规则等功能",
   "author": "dandan",
