@@ -26,7 +26,7 @@ try {
     // 创建发布目录
     const releaseDir = path.join(__dirname, 'release');
     if (fs.existsSync(releaseDir)) {
-        fs.rmdirSync(releaseDir, { recursive: true });
+        fs.rmSync(releaseDir, { recursive: true, force: true });
     }
     fs.mkdirSync(releaseDir);
 

@@ -50,5 +50,4 @@ esbuild.build({
     ],
     watch: !prod,
     minify: prod,
-    inject: ['./node_modules/tslib/tslib.js'], // 添加这一行
 }).catch(() => process.exit(1));
