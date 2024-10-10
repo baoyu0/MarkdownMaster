@@ -453,7 +453,7 @@ class FormatHistoryModal extends Modal {
             new Setting(contentEl)
                 .setName(`历史记录 ${index + 1}`)
                 .addButton(btn => btn
-                    .setButtonText('恢���')
+                    .setButtonText('恢')
                     .onClick(() => {
                         this.onSelect(content);
                         this.close();
@@ -592,7 +592,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                                 await this.plugin.saveSettings();
                             }
                         }))
-                    .addButton((button: ButtonComponent) => button
+                    .addButton(button => button  // 移除 ButtonComponent 类型注解
                         .setButtonText('删除')
                         .onClick(async () => {
                             if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
