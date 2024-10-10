@@ -1,6 +1,9 @@
 # Obsidian 文件
 .obsidian/
 
+# 忽略 obsidian-developer-docs 文件夹
+/obsidian-developer-docs/
+
 # Node.js 依赖
 node_modules/
 
