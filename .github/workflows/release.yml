@@ -33,8 +33,12 @@ jobs:
         draft: false
         prerelease: false
 
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
+
     - name: Zip release files
-      run: zip -r release.zip main.js manifest.json styles.css
+      run: zip -r markdown-master-${{ steps.get_version.outputs.VERSION }}.zip main.js manifest.json styles.css
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
@@ -42,8 +46,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release.zip
-        asset_name: release.zip
+        asset_path: ./markdown-master-${{ steps.get_version.outputs.VERSION }}.zip
+        asset_name: markdown-master-${{ steps.get_version.outputs.VERSION }}.zip
         asset_content_type: application/zip
 
     - name: List node_modules
