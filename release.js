@@ -46,10 +46,26 @@ try {
     // Git 操作
     console.log('执行 Git 操作...');
     execSync('git add .', { stdio: 'inherit' });
-    execSync(`git commit -m "Bump version to ${newVersion}"`, { stdio: 'inherit' });
+    execSync('git add .', { stdio: 'inherit' });
+
+    // 替换原有的 git commit 命令
+    try {
+        execSync('git diff --staged --quiet', { stdio: 'inherit' });
+        console.log('没有需要提交的更改');
+    } catch (error) {
+        // 如果有更改，上面的命令会失败，我们就执行提交
+        execSync(`git commit -m "Bump version to ${newVersion}"`, { stdio: 'inherit' });
+        console.log(`版本 ${newVersion} 已成功提交`);
+    }
+
     execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
     execSync('git push && git push --tags', { stdio: 'inherit' });
     console.log(`版本 ${newVersion} 已成功发布！`);
+
+    // 日志确认版本号更新
+    console.log('package.json 版本:', require('./package.json').version);
+    console.log('manifest.json 版本:', require('./manifest.json').version);
+    console.log('versions.json 最新版本:', Object.keys(require('./versions.json')).pop());
 } catch (error) {
     console.error('发布过程中出错：', error.message);
     process.exit(1);
