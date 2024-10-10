@@ -11,10 +11,8 @@ interface MarkdownMasterSettings {
 }
 
 interface FormatContentOptions {
-    enableLinkRemoval: boolean;
-    linkRemovalRegex: string;
-    linkRemovalRegexDescription?: string;
-    additionalLinkRemovalRegexes?: Array<{ regex: string; description: string }>;
+    enableRegexReplacement: boolean;
+    regexReplacements: Array<{ regex: string; replacement: string; description: string }>;
     // ... 其他内容相关选项 ...
 }
 
@@ -42,9 +40,14 @@ interface FormatAdvancedOptions {
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     formatOptions: {
         content: {
-            enableLinkRemoval: true,
-            linkRemovalRegex: '\\[\\d+\\]\\s+(https?:\\/\\/\\S+)',
-            additionalLinkRemovalRegexes: [],
+            enableRegexReplacement: true,
+            regexReplacements: [
+                {
+                    regex: '\\[\\d+\\]\\s+(https?:\\/\\/\\S+)',
+                    replacement: '',
+                    description: '删除带数字的链接'
+                }
+            ],
         },
         structure: {
             enableHeadingConversion: true,
@@ -141,12 +144,10 @@ export default class MarkdownMasterPlugin extends Plugin {
         const loadedData = await this.loadData();
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 
-        // 确保有必要的设置都存在
-        if (!this.settings.formatOptions.structure.headingConversionRules) {
-            this.settings.formatOptions.structure.headingConversionRules = DEFAULT_SETTINGS.formatOptions.structure.headingConversionRules;
+        // 确保 regexReplacements 数组存在
+        if (!this.settings.formatOptions.content.regexReplacements) {
+            this.settings.formatOptions.content.regexReplacements = [];
         }
-
-        // 可以添加其他设置的检查和初始化
 
         await this.saveSettings();
     }
@@ -159,24 +160,15 @@ export default class MarkdownMasterPlugin extends Plugin {
         let formatted = content;
         const { formatOptions } = this.settings;
 
-        if (formatOptions.content.enableLinkRemoval) {
-            try {
-                const regex = new RegExp(formatOptions.content.linkRemovalRegex, 'gm');
-                formatted = formatted.replace(regex, '');
-            } catch (error) {
-                console.error('Invalid link removal regex:', error);
-            }
-            
-            if (formatOptions.content.additionalLinkRemovalRegexes) {
-                formatOptions.content.additionalLinkRemovalRegexes.forEach((regexObj) => {
-                    try {
-                        const regex = new RegExp(regexObj.regex, 'gm');
-                        formatted = formatted.replace(regex, '');
-                    } catch (error) {
-                        console.error('Invalid additional link removal regex:', error);
-                    }
-                });
-            }
+        if (formatOptions.content.enableRegexReplacement) {
+            formatOptions.content.regexReplacements.forEach((regexObj) => {
+                try {
+                    const regex = new RegExp(regexObj.regex, 'gm');
+                    formatted = formatted.replace(regex, regexObj.replacement);
+                } catch (error) {
+                    console.error('Invalid regex replacement:', error);
+                }
+            });
         }
 
         if (formatOptions.structure.enableHeadingConversion) {
@@ -504,108 +496,10 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         containerEl.empty();
         containerEl.createEl('h2', { text: 'Markdown Master 设置' });
 
-        this.addContentFormatSettings(containerEl);
         this.addStructureFormatSettings(containerEl);
+        this.addContentFormatSettings(containerEl);
         this.addStyleFormatSettings(containerEl);
         this.addAdvancedFormatSettings(containerEl);
-    }
-
-    addContentFormatSettings(containerEl: ObsidianHTMLElement) {
-        containerEl.createEl('h3', { text: '内容格式化选项' });
-        
-        const linkRemovalSetting = new Setting(containerEl)
-            .setName('启用链接删除')
-            .setDesc('根据指定的正则表达式删除特定链接')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.formatOptions.content.enableLinkRemoval)
-                .onChange(async (value) => {
-                    this.plugin.settings.formatOptions.content.enableLinkRemoval = value;
-                    await this.plugin.saveSettings();
-                    updateLinkRemovalSettingState(value);
-                }));
-
-        const linkRemovalContainer = containerEl.createEl('div', { cls: 'markdown-master-nested-settings' });
-        linkRemovalContainer.style.marginLeft = '20px';
-
-        new Setting(linkRemovalContainer)
-            .setName('链接删除正则表达式')
-            .setDesc('输入用于匹配要删除的链接的正则表达式')
-            .addTextArea(text => text
-                .setPlaceholder('输入正则表达式')
-                .setValue(this.plugin.settings.formatOptions.content.linkRemovalRegex)
-                .onChange(async (value) => {
-                    this.plugin.settings.formatOptions.content.linkRemovalRegex = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(linkRemovalContainer)
-            .setName('正则表达式说明')
-            .setDesc('输入关于上面正则表达式的说明')
-            .addTextArea(text => text
-                .setPlaceholder('输入说明')
-                .setValue(this.plugin.settings.formatOptions.content.linkRemovalRegexDescription || '')
-                .onChange(async (value) => {
-                    this.plugin.settings.formatOptions.content.linkRemovalRegexDescription = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(linkRemovalContainer)
-            .setName('添加额外的正则表达式')
-            .setDesc('添加多个正则表达式来匹配不同类型的链接')
-            .addButton(button => button
-                .setButtonText('添加新的正则表达式')
-                .onClick(async () => {
-                    if (!this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
-                        this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes = [];
-                    }
-                    this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes.push({ regex: '', description: '' });
-                    await this.plugin.saveSettings();
-                    this.display(); // 重新渲染设置页面
-                }));
-
-        const additionalRegexContainer = linkRemovalContainer.createEl('div', { cls: 'markdown-master-nested-settings' });
-        additionalRegexContainer.style.marginLeft = '20px';
-
-        if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
-            this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes.forEach((regexObj, index) => {
-                const regexSetting = new Setting(additionalRegexContainer)
-                    .addTextArea(text => text
-                        .setPlaceholder('输入正则表达式')
-                        .setValue(regexObj.regex)
-                        .onChange(async (value) => {
-                            if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
-                                this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes[index].regex = value;
-                                await this.plugin.saveSettings();
-                            }
-                        }))
-                    .addTextArea(text => text
-                        .setPlaceholder('输入说明')
-                        .setValue(regexObj.description)
-                        .onChange(async (value) => {
-                            if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
-                                this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes[index].description = value;
-                                await this.plugin.saveSettings();
-                            }
-                        }))
-                    .addButton(button => button  // 移除 ButtonComponent 类型注解
-                        .setButtonText('删除')
-                        .onClick(async () => {
-                            if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
-                                this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes.splice(index, 1);
-                                await this.plugin.saveSettings();
-                                this.display(); // 重新渲染设置页面
-                            }
-                        }));
-            });
-        }
-
-        const updateLinkRemovalSettingState = (enabled: boolean) => {
-            linkRemovalContainer.style.display = enabled ? 'block' : 'none';
-        };
-
-        updateLinkRemovalSettingState(this.plugin.settings.formatOptions.content.enableLinkRemoval);
-
-        // 保留其他内容格式化选项
     }
 
     addStructureFormatSettings(containerEl: ObsidianHTMLElement) {
@@ -665,6 +559,96 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                         });
                 });
         }
+    }
+
+    addContentFormatSettings(containerEl: ObsidianHTMLElement) {
+        console.log("开始添加内容格式化设置");
+        containerEl.createEl('h3', { text: '正则表达式替换' });
+        
+        new Setting(containerEl)
+            .setName('启用正则表达式替换')
+            .setDesc('使用自定义的正则表达式进行内容替换')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.content.enableRegexReplacement)
+                .onChange(async (value) => {
+                    console.log("切换正则表达式替换:", value);
+                    this.plugin.settings.formatOptions.content.enableRegexReplacement = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // 重新渲染整个设置页面
+                }));
+
+        if (this.plugin.settings.formatOptions.content.enableRegexReplacement) {
+            console.log("正则表达式替换已启用");
+            const regexReplacementContainer = containerEl.createEl('div', { cls: 'markdown-master-nested-settings' });
+            regexReplacementContainer.style.marginLeft = '20px';
+
+            new Setting(regexReplacementContainer)
+                .setName('添加新的正则表达式替换规则')
+                .setDesc('添加多个正则表达式来匹配和替换不同的内容')
+                .addButton(button => button
+                    .setButtonText('添加新规则')
+                    .onClick(() => {
+                        console.log("点击添加新规则按钮");
+                        this.addNewRegexRule();
+                    }));
+
+            if (this.plugin.settings.formatOptions.content.regexReplacements) {
+                console.log("当前规则数量:", this.plugin.settings.formatOptions.content.regexReplacements.length);
+                this.plugin.settings.formatOptions.content.regexReplacements.forEach((regexObj, index) => {
+                    this.createRegexRuleSetting(regexReplacementContainer, regexObj, index);
+                });
+            } else {
+                console.log("regexReplacements 数组不存在");
+            }
+        } else {
+            console.log("正则表达式替换未启用");
+        }
+    }
+
+    private async addNewRegexRule() {
+        console.log("开始添加新规则");
+        if (!this.plugin.settings.formatOptions.content.regexReplacements) {
+            this.plugin.settings.formatOptions.content.regexReplacements = [];
+        }
+        this.plugin.settings.formatOptions.content.regexReplacements.push({ regex: '', replacement: '', description: '' });
+        await this.plugin.saveSettings();
+        console.log("新规则已添加，当前规则数量:", this.plugin.settings.formatOptions.content.regexReplacements.length);
+        this.display(); // 重新渲染整个设置页面
+    }
+
+    private createRegexRuleSetting(container: ObsidianHTMLElement, regexObj: { regex: string; replacement: string; description: string }, index: number) {
+        console.log("创建规则设置:", index);
+        new Setting(container)
+            .setName(`规则 ${index + 1}`)
+            .addTextArea(text => text
+                .setPlaceholder('输入正则表达式')
+                .setValue(regexObj.regex)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.content.regexReplacements[index].regex = value;
+                    await this.plugin.saveSettings();
+                }))
+            .addTextArea(text => text
+                .setPlaceholder('输入替换内容')
+                .setValue(regexObj.replacement)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.content.regexReplacements[index].replacement = value;
+                    await this.plugin.saveSettings();
+                }))
+            .addTextArea(text => text
+                .setPlaceholder('输入说明')
+                .setValue(regexObj.description)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.content.regexReplacements[index].description = value;
+                    await this.plugin.saveSettings();
+                }))
+            .addButton(button => button
+                .setButtonText('删除')
+                .onClick(async () => {
+                    console.log("删除规则:", index);
+                    this.plugin.settings.formatOptions.content.regexReplacements.splice(index, 1);
+                    await this.plugin.saveSettings();
+                    this.display(); // 重新渲染整个设置页面
+                }));
     }
 
     addStyleFormatSettings(containerEl: ObsidianHTMLElement) {
