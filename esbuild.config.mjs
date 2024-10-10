@@ -11,7 +11,7 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === 'production');
 
-esbuild.build({
+const context = await esbuild.context({
     banner: {
         js: banner,
     },
@@ -31,13 +31,28 @@ esbuild.build({
         '@lezer/common',
         '@lezer/highlight',
         '@lezer/lr',
-        'tslib', // 添加这一行
-        ...builtins
-    ],
+        ...builtins],
     format: 'cjs',
     target: 'es2018',
     logLevel: "info",
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
     outfile: 'main.js',
-}).catch(() => process.exit(1));
+    plugins: [
+        {
+            name: 'obsidian-plugin',
+            setup(build) {
+                build.onResolve({ filter: /^obsidian$/ }, args => {
+                    return { path: args.path, external: true };
+                });
+            },
+        },
+    ],
+});
+
+if (prod) {
+    await context.rebuild();
+    process.exit(0);
+} else {
+    await context.watch();
+}
