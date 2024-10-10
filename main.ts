@@ -118,7 +118,7 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.showFormatHistory()
         });
 
-        // 修改自动格式化功能的事件注册
+        // 修改自动格式化功能事件注册
         if (this.settings.formatOptions.advanced.enableAutoFormat) {
             this.fileOpenRef = this.registerEvent(
                 this.app.workspace.on('file-open', (file: TFile) => {
@@ -166,6 +166,18 @@ export default class MarkdownMasterPlugin extends Plugin {
 
             .markdown-master-regex-help:hover {
                 text-decoration: underline;
+            }
+
+            .regex-test-output {
+                margin-top: 20px;
+                padding: 10px;
+                border: 1px solid var(--background-modifier-border);
+                border-radius: 5px;
+            }
+
+            .regex-test-output pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
             }
         `);
     }
@@ -389,7 +401,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         new TextStatisticsModal(this.app, wordCount, charCount, lineCount).open();
     }
 
-    // 在类中添加这个辅助方法
+    // 在类添加这个辅助方法
     private addStyle(cssString: string) {
         const css = document.createElement('style');
         css.id = 'markdown-master-styles';
@@ -731,6 +743,11 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }))
             .addButton(button => button
+                .setButtonText('测试')
+                .onClick(() => {
+                    new RegexTestModal(this.app, regexObj).open();
+                }))
+            .addButton(button => button
                 .setButtonText('删除')
                 .onClick(async () => {
                     console.log("删除规则:", index);
@@ -788,6 +805,70 @@ class RegexHelpModal extends Modal {
             const li = ul2.createEl('li');
             li.createEl('a', { text: item.text, href: item.href, attr: { target: '_blank' } });
         });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+class RegexTestModal extends Modal {
+    private regexObj: { regex: string; replacement: string; description: string; enabled: boolean };
+    private inputEl!: HTMLTextAreaElement;
+    private outputEl!: HTMLDivElement;
+
+    constructor(app: App, regexObj: { regex: string; replacement: string; description: string; enabled: boolean }) {
+        super(app);
+        this.regexObj = regexObj;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl('h2', { text: '正则表达式测试' });
+
+        new Setting(contentEl)
+            .setName('测试文本')
+            .setDesc('输入要测试的文本')
+            .addTextArea(text => {
+                // 使用 Obsidian 的 TextAreaComponent 类型
+                this.inputEl = (text as any).inputEl;
+                text.setPlaceholder('在此输入测试文本');
+                text.onChange(this.updateResult.bind(this));
+            });
+
+        // 使用类型断言和 unknown 中间类型
+        this.outputEl = contentEl.createEl('div', { cls: 'regex-test-output' }) as unknown as HTMLDivElement;
+
+        new Setting(contentEl)
+            .addButton(button => button
+                .setButtonText('关闭')
+                .onClick(() => this.close()));
+    }
+
+    updateResult() {
+        const inputText = this.inputEl.value;
+        try {
+            const regex = new RegExp(this.regexObj.regex, 'gm');
+            const result = inputText.replace(regex, this.regexObj.replacement);
+            this.outputEl.innerHTML = `
+                <h3>替换结果：</h3>
+                <pre>${result}</pre>
+            `;
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                this.outputEl.innerHTML = `
+                    <h3>错误：</h3>
+                    <pre>${error.message}</pre>
+                `;
+            } else {
+                this.outputEl.innerHTML = `
+                    <h3>错误：</h3>
+                    <pre>发生未知错误</pre>
+                `;
+            }
+        }
     }
 
     onClose() {
