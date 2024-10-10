@@ -12,6 +12,9 @@ interface MarkdownMasterSettings {
 
 interface FormatContentOptions {
     enableLinkRemoval: boolean;
+    linkRemovalRegex: string;
+    linkRemovalRegexDescription?: string;
+    additionalLinkRemovalRegexes?: Array<{ regex: string; description: string }>;
     enableReferenceRemoval: boolean;
     // ... 其他内容相关选项 ...
 }
@@ -41,6 +44,8 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     formatOptions: {
         content: {
             enableLinkRemoval: true,
+            linkRemovalRegex: '\\[\\d+\\]\\s+(https?:\\/\\/\\S+)',
+            additionalLinkRemovalRegexes: [],
             enableReferenceRemoval: true,
         },
         structure: {
@@ -138,7 +143,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         const loadedData = await this.loadData();
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 
-        // 确保所有必要的设置都存在
+        // 确保有必要的设置都存在
         if (!this.settings.formatOptions.structure.headingConversionRules) {
             this.settings.formatOptions.structure.headingConversionRules = DEFAULT_SETTINGS.formatOptions.structure.headingConversionRules;
         }
@@ -155,6 +160,26 @@ export default class MarkdownMasterPlugin extends Plugin {
     formatMarkdown(content: string): string {
         let formatted = content;
         const { formatOptions } = this.settings;
+
+        if (formatOptions.content.enableLinkRemoval) {
+            try {
+                const regex = new RegExp(formatOptions.content.linkRemovalRegex, 'gm');
+                formatted = formatted.replace(regex, '');
+            } catch (error) {
+                console.error('Invalid link removal regex:', error);
+            }
+            
+            if (formatOptions.content.additionalLinkRemovalRegexes) {
+                formatOptions.content.additionalLinkRemovalRegexes.forEach((regexObj) => {
+                    try {
+                        const regex = new RegExp(regexObj.regex, 'gm');
+                        formatted = formatted.replace(regex, '');
+                    } catch (error) {
+                        console.error('Invalid additional link removal regex:', error);
+                    }
+                });
+            }
+        }
 
         if (formatOptions.structure.enableHeadingConversion) {
             const rules = formatOptions.structure.headingConversionRules;
@@ -182,9 +207,6 @@ export default class MarkdownMasterPlugin extends Plugin {
             }
         }
 
-        if (formatOptions.content.enableLinkRemoval) {
-            formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
-        }
         if (formatOptions.style.enableBoldRemoval) {
             formatted = formatted.replace(/\*\*/g, '');
         }
@@ -431,7 +453,7 @@ class FormatHistoryModal extends Modal {
             new Setting(contentEl)
                 .setName(`历史记录 ${index + 1}`)
                 .addButton(btn => btn
-                    .setButtonText('恢复')
+                    .setButtonText('恢���')
                     .onClick(() => {
                         this.onSelect(content);
                         this.close();
@@ -496,17 +518,110 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
     addContentFormatSettings(containerEl: ObsidianHTMLElement) {
         containerEl.createEl('h3', { text: '内容格式化选项' });
         
-        new Setting(containerEl)
-            .setName('删除特定链接')
-            .setDesc('删除格式为 [数字] http://... 的链接')
+        const linkRemovalSetting = new Setting(containerEl)
+            .setName('启用链接删除')
+            .setDesc('根据指定的正则表达式删除特定链接')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.content.enableLinkRemoval)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.content.enableLinkRemoval = value;
                     await this.plugin.saveSettings();
+                    updateLinkRemovalSettingState(value);
                 }));
-        
-        // ... 添加其他内容相关的设置 ...
+
+        const linkRemovalContainer = containerEl.createEl('div', { cls: 'markdown-master-nested-settings' });
+        linkRemovalContainer.style.marginLeft = '20px';
+
+        new Setting(linkRemovalContainer)
+            .setName('链接删除正则表达式')
+            .setDesc('输入用于匹配要删除的链接的正则表达式')
+            .addTextArea(text => text
+                .setPlaceholder('输入正则表达式')
+                .setValue(this.plugin.settings.formatOptions.content.linkRemovalRegex)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.content.linkRemovalRegex = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(linkRemovalContainer)
+            .setName('正则表达式说明')
+            .setDesc('输入关于上面正则表达式的说明')
+            .addTextArea(text => text
+                .setPlaceholder('输入说明')
+                .setValue(this.plugin.settings.formatOptions.content.linkRemovalRegexDescription || '')
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.content.linkRemovalRegexDescription = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(linkRemovalContainer)
+            .setName('添加额外的正则表达式')
+            .setDesc('添加多个正则表达式来匹配不同类型的链接')
+            .addButton(button => button
+                .setButtonText('添加新的正则表达式')
+                .onClick(async () => {
+                    if (!this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
+                        this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes = [];
+                    }
+                    this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes.push({ regex: '', description: '' });
+                    await this.plugin.saveSettings();
+                    this.display(); // 重新渲染设置页面
+                }));
+
+        const additionalRegexContainer = linkRemovalContainer.createEl('div', { cls: 'markdown-master-nested-settings' });
+        additionalRegexContainer.style.marginLeft = '20px';
+
+        if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
+            this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes.forEach((regexObj, index) => {
+                const regexSetting = new Setting(additionalRegexContainer)
+                    .addTextArea(text => text
+                        .setPlaceholder('输入正则表达式')
+                        .setValue(regexObj.regex)
+                        .onChange(async (value) => {
+                            if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
+                                this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes[index].regex = value;
+                                await this.plugin.saveSettings();
+                            }
+                        }))
+                    .addTextArea(text => text
+                        .setPlaceholder('输入说明')
+                        .setValue(regexObj.description)
+                        .onChange(async (value) => {
+                            if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
+                                this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes[index].description = value;
+                                await this.plugin.saveSettings();
+                            }
+                        }))
+                    .addButton((button: ButtonComponent) => button
+                        .setButtonText('删除')
+                        .onClick(async () => {
+                            if (this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes) {
+                                this.plugin.settings.formatOptions.content.additionalLinkRemovalRegexes.splice(index, 1);
+                                await this.plugin.saveSettings();
+                                this.display(); // 重新渲染设置页面
+                            }
+                        }));
+            });
+        }
+
+        const updateLinkRemovalSettingState = (enabled: boolean) => {
+            linkRemovalContainer.style.display = enabled ? 'block' : 'none';
+        };
+
+        updateLinkRemovalSettingState(this.plugin.settings.formatOptions.content.enableLinkRemoval);
+
+        // 保留其他内容格式化选项
+        new Setting(containerEl)
+            .setName('启用引用删除')
+            .setDesc('删除所有数字引用标记')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.content.enableReferenceRemoval)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.content.enableReferenceRemoval = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // ... 可以继续添加其他内容格式化选项
     }
 
     addStructureFormatSettings(containerEl: ObsidianHTMLElement) {
