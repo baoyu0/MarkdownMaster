@@ -12,7 +12,7 @@ interface MarkdownMasterSettings {
 
 interface FormatContentOptions {
     enableRegexReplacement: boolean;
-    regexReplacements: Array<{ regex: string; replacement: string; description: string }>;
+    regexReplacements: Array<{ regex: string; replacement: string; description: string; enabled: boolean }>;
     // ... 其他内容相关选项 ...
 }
 
@@ -45,7 +45,8 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
                 {
                     regex: '\\[\\d+\\]\\s+(https?:\\/\\/\\S+)',
                     replacement: '',
-                    description: '删除带数字的链接'
+                    description: '删除带数字的链接',
+                    enabled: true
                 }
             ],
         },
@@ -134,6 +135,30 @@ export default class MarkdownMasterPlugin extends Plugin {
             name: '显示文本统计',
             callback: () => this.showTextStatistics()
         });
+
+        // 添加自定义 CSS
+        this.addStyle(`
+            .markdown-master-preview-container {
+                max-height: 60vh;
+                overflow-y: auto;
+                border: 1px solid var(--background-modifier-border);
+                padding: 10px;
+                margin-bottom: 20px;
+            }
+            .markdown-master-diff-preview pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+            .markdown-master-diff-added {
+                background-color: #e6ffed;
+                color: #24292e;
+            }
+            .markdown-master-diff-removed {
+                background-color: #ffeef0;
+                color: #24292e;
+                text-decoration: line-through;
+            }
+        `);
     }
 
     onunload() {
@@ -156,17 +181,26 @@ export default class MarkdownMasterPlugin extends Plugin {
         await this.saveData(this.settings);
     }
 
+    private showNotice(message: string, timeout: number = 4000) {
+        new Notice(message, timeout);
+    }
+
     formatMarkdown(content: string): string {
         let formatted = content;
         const { formatOptions } = this.settings;
+        let replacementCount = 0;
 
         if (formatOptions.content.enableRegexReplacement) {
             formatOptions.content.regexReplacements.forEach((regexObj) => {
                 try {
                     const regex = new RegExp(regexObj.regex, 'gm');
+                    const originalContent = formatted;
                     formatted = formatted.replace(regex, regexObj.replacement);
+                    const currentReplacements = (originalContent.match(regex) || []).length;
+                    replacementCount += currentReplacements;
                 } catch (error) {
                     console.error('Invalid regex replacement:', error);
+                    this.showNotice(`错误：无效的正则表达式 "${regexObj.regex}"`);
                 }
             });
         }
@@ -223,6 +257,7 @@ export default class MarkdownMasterPlugin extends Plugin {
             formatted = this.optimizeImageLinks(formatted);
         }
 
+        this.showNotice(`格式化完成，共进行了 ${replacementCount} 次替换`);
         return formatted.trim();
     }
 
@@ -344,6 +379,14 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         new TextStatisticsModal(this.app, wordCount, charCount, lineCount).open();
     }
+
+    // 在类中添加这个辅助方法
+    private addStyle(cssString: string) {
+        const css = document.createElement('style');
+        css.id = 'markdown-master-styles';
+        css.textContent = cssString;
+        document.head.append(css);
+    }
 }
 
 class FormatPreviewModal extends Modal {
@@ -364,7 +407,12 @@ class FormatPreviewModal extends Modal {
         contentEl.empty();
         contentEl.createEl('h2', { text: '预览格式化结果' });
 
-        this.displayDiff();
+        const previewContainer = contentEl.createEl('div', { cls: 'markdown-master-preview-container' });
+        const diffPreview = previewContainer.createEl('div', { cls: 'markdown-master-diff-preview' });
+
+        diffPreview.createEl('h3', { text: '对比视图' });
+
+        this.createDiffView(diffPreview);
 
         new Setting(contentEl)
             .addButton(btn => btn
@@ -388,15 +436,19 @@ class FormatPreviewModal extends Modal {
         this.onSubmit(this.result);
     }
 
-    displayDiff() {
+    private createDiffView(container: ObsidianHTMLElement) {
         const diff = diffChars(this.originalContent, this.formattedContent);
-        const diffContainer = this.contentEl.createDiv({ cls: 'markdown-master-diff' });
+        const pre = container.createEl('pre');
+        const code = pre.createEl('code');
 
         diff.forEach((part: Change) => {
-            const color = part.added ? 'green' : part.removed ? 'red' : 'grey';
-            const span = diffContainer.createSpan();
-            span.style.color = color;
+            const span = code.createEl('span');
             span.textContent = part.value;
+            if (part.added) {
+                (span as any).addClass('markdown-master-diff-added');
+            } else if (part.removed) {
+                (span as any).addClass('markdown-master-diff-removed');
+            }
         });
     }
 }
@@ -598,7 +650,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.createRegexRuleSetting(regexReplacementContainer, regexObj, index);
                 });
             } else {
-                console.log("regexReplacements 数组不存在");
+                console.log("regexReplacements 数组��存在");
             }
         } else {
             console.log("正则表达式替换未启用");
@@ -610,16 +662,22 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         if (!this.plugin.settings.formatOptions.content.regexReplacements) {
             this.plugin.settings.formatOptions.content.regexReplacements = [];
         }
-        this.plugin.settings.formatOptions.content.regexReplacements.push({ regex: '', replacement: '', description: '' });
+        this.plugin.settings.formatOptions.content.regexReplacements.push({ regex: '', replacement: '', description: '', enabled: true });
         await this.plugin.saveSettings();
         console.log("新规则已添加，当前规则数量:", this.plugin.settings.formatOptions.content.regexReplacements.length);
         this.display(); // 重新渲染整个设置页面
     }
 
-    private createRegexRuleSetting(container: ObsidianHTMLElement, regexObj: { regex: string; replacement: string; description: string }, index: number) {
+    private createRegexRuleSetting(container: ObsidianHTMLElement, regexObj: { regex: string; replacement: string; description: string; enabled: boolean }, index: number) {
         console.log("创建规则设置:", index);
         new Setting(container)
             .setName(`规则 ${index + 1}`)
+            .addToggle(toggle => toggle
+                .setValue(regexObj.enabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.content.regexReplacements[index].enabled = value;
+                    await this.plugin.saveSettings();
+                }))
             .addTextArea(text => text
                 .setPlaceholder('输入正则表达式')
                 .setValue(regexObj.regex)
