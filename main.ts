@@ -145,16 +145,9 @@ export default class MarkdownMasterPlugin extends Plugin {
     async formatMarkdown() {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (activeView) {
-            const editor = activeView.editor;
-            const originalContent = editor.getValue();
-            const formattedContent = await this.applyFormatting(originalContent);
-            
-            new FormatPreviewModal(this.app, originalContent, formattedContent, (result) => {
-                if (result) {
-                    editor.setValue(formattedContent);
-                    new Notice('Formatting applied');
-                }
-            }).open();
+            const originalContent = activeView.editor.getValue();
+            const formattedContent = await this.applyFormatRules(originalContent);
+            new FormatPreviewModal(this.app, this, originalContent, formattedContent).open();
         }
     }
 
@@ -628,49 +621,59 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 }
 
 class FormatPreviewModal extends Modal {
-    constructor(app: App, private originalContent: string, private formattedContent: string, private onSubmit: (result: boolean) => void) {
+    plugin: MarkdownMasterPlugin;
+    originalContent: string;
+    formattedContent: string;
+
+    constructor(app: App, plugin: MarkdownMasterPlugin, originalContent: string, formattedContent: string) {
         super(app);
+        this.plugin = plugin;
+        this.originalContent = originalContent;
+        this.formattedContent = formattedContent;
     }
 
     onOpen() {
         const {contentEl} = this;
         contentEl.empty();
-        
-        contentEl.createEl('h2', {text: 'Format Preview'});
+
+        contentEl.createEl('h2', {text: this.plugin.t('Format Preview')});
 
         const originalDiv = contentEl.createDiv();
-        originalDiv.createEl('h3', {text: 'Original'});
-        this.renderMarkdown(this.originalContent, originalDiv as unknown as HTMLElement);
+        originalDiv.createEl('h3', {text: this.plugin.t('Original')});
+        this.renderMarkdown(originalDiv, this.originalContent);
 
         const formattedDiv = contentEl.createDiv();
-        formattedDiv.createEl('h3', {text: 'Formatted'});
-        this.renderMarkdown(this.formattedContent, formattedDiv as unknown as HTMLElement);
+        formattedDiv.createEl('h3', {text: this.plugin.t('Formatted')});
+        this.renderMarkdown(formattedDiv, this.formattedContent);
 
-        new Setting(contentEl)
-            .addButton(btn => btn
-                .setButtonText('Apply')
-                .setCta()
-                .onClick(() => {
-                    this.close();
-                    this.onSubmit(true);
-                }))
-            .addButton(btn => btn
-                .setButtonText('Cancel')
-                .onClick(() => {
-                    this.close();
-                    this.onSubmit(false);
-                }));
+        const buttonContainer = contentEl.createDiv({cls: 'button-container'});
+        const applyButton = buttonContainer.createEl('button', {text: this.plugin.t('Apply Changes')});
+        applyButton.addEventListener('click', () => {
+            this.applyChanges();
+        });
+
+        const cancelButton = buttonContainer.createEl('button', {text: this.plugin.t('Cancel')});
+        cancelButton.addEventListener('click', () => {
+            this.close();
+        });
+    }
+
+    renderMarkdown(container: HTMLElement, content: string) {
+        const markdownView = new MarkdownView(this.app);
+        markdownView.setViewData(content, false);
+        container.appendChild(markdownView.contentEl);
+    }
+
+    applyChanges() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            activeView.editor.setValue(this.formattedContent);
+        }
+        this.close();
     }
 
     onClose() {
         const {contentEl} = this;
         contentEl.empty();
-    }
-
-    private renderMarkdown(content: string, container: HTMLElement) {
-        const tempEl = document.createElement('div');
-        // 使用 Obsidian 的 MarkdownRenderer 来渲染 Markdown
-        (this.app as any).internalPlugins.plugins['markdown'].cm6.editorInfoByPath[''].renderMarkdown(content, tempEl);
-        container.appendChild(tempEl);
     }
 }
