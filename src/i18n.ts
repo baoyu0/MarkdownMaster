@@ -31,6 +31,24 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "Import": "导入",
   },
   en: {
-    // ... 保持英文翻译不变
+    "Markdown Master Settings": "Markdown Master Settings",
+    "Enable Auto Format": "Enable Auto Format",
+    "Automatically format Markdown content on save": "Automatically format Markdown content on save",
+    "Enable Heading Conversion": "Enable Heading Conversion",
+    "Convert headings to specified levels": "Convert headings to specified levels",
+    "Enable Link Cleaning": "Enable Link Cleaning",
+    "Clean links based on custom rules": "Clean links based on custom rules",
+    "Enable Text Deletion": "Enable Text Deletion",
+    "Delete text based on custom regex patterns": "Delete text based on custom regex patterns",
+    "Enable Symbol Deletion": "Enable Symbol Deletion",
+    "Delete specific symbols from text": "Delete specific symbols from text",
+    "Export Settings": "Export Settings",
+    "Export your current settings to a JSON file": "Export your current settings to a JSON file",
+    "Import Settings": "Import Settings",
+    "Import settings from a JSON file": "Import settings from a JSON file",
+    "Language": "Language",
+    "Select the plugin language": "Select the plugin language",
+    "Export": "Export",
+    "Import": "Import",
   }
 };

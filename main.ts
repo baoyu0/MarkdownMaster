@@ -75,6 +75,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
 
 export default class MarkdownMasterPlugin extends Plugin {
     settings: MarkdownMasterSettings;
+    settingTab: MarkdownMasterSettingTab;
 
     private readonly debouncedSaveSettings = debounce(async () => {
         await this.saveSettings();
@@ -110,7 +111,8 @@ export default class MarkdownMasterPlugin extends Plugin {
                 callback: () => this.toggleAutoFormat(),
             });
 
-            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+            this.settingTab = new MarkdownMasterSettingTab(this.app, this);
+            this.addSettingTab(this.settingTab);
 
             if (this.settings.autoFormatOnSave) {
                 this.registerEvent(
@@ -353,6 +355,15 @@ export default class MarkdownMasterPlugin extends Plugin {
     async updateSetting<K extends keyof MarkdownMasterSettings>(key: K, value: MarkdownMasterSettings[K]) {
         this.settings[key] = value;
         this.debouncedSaveSettings();
+    }
+
+    // 添加这个新方法
+    async updateLanguage(newLanguage: SupportedLanguage) {
+        this.settings.language = newLanguage;
+        await this.saveSettings();
+        if (this.settingTab) {
+            this.settingTab.display();
+        }
     }
 }
 
@@ -600,9 +611,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 })
                 .setValue(this.plugin.settings.language)
                 .onChange(async (value: SupportedLanguage) => {
-                    this.plugin.settings.language = value;
-                    await this.plugin.saveSettings();
-                    this.display(); // 重新加载设置页面以应用新语言
+                    await this.plugin.updateLanguage(value);
                 }));
 
         // 添加更多设置项...
