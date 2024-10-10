@@ -11,7 +11,7 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === 'production');
 
-const context = await esbuild.context({
+esbuild.build({
     banner: {
         js: banner,
     },
@@ -48,11 +48,5 @@ const context = await esbuild.context({
             },
         },
     ],
-});
-
-if (prod) {
-    await context.rebuild();
-    process.exit(0);
-} else {
-    await context.watch();
-}
+    watch: !prod,
+}).catch(() => process.exit(1));
