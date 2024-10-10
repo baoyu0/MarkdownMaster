@@ -31,6 +31,7 @@ esbuild.build({
         '@lezer/common',
         '@lezer/highlight',
         '@lezer/lr',
+        'tslib', // 添加这一行
         ...builtins
     ],
     format: 'cjs',
