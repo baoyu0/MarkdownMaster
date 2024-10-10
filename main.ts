@@ -646,11 +646,11 @@ class FormatPreviewModal extends Modal {
 
         const originalDiv = contentEl.createDiv();
         originalDiv.createEl('h3', {text: this.plugin.t('Original')});
-        this.renderMarkdown(originalDiv, this.originalContent);
+        this.renderMarkdown(originalDiv as HTMLElement, this.originalContent);
 
         const formattedDiv = contentEl.createDiv();
         formattedDiv.createEl('h3', {text: this.plugin.t('Formatted')});
-        this.renderMarkdown(formattedDiv, this.formattedContent);
+        this.renderMarkdown(formattedDiv as HTMLElement, this.formattedContent);
 
         const buttonContainer = contentEl.createDiv({cls: 'button-container'});
         const applyButton = buttonContainer.createEl('button', {text: this.plugin.t('Apply Changes')});
@@ -665,7 +665,8 @@ class FormatPreviewModal extends Modal {
     }
 
     renderMarkdown(container: HTMLElement, content: string) {
-        MarkdownRenderer.renderMarkdown(content, container, '', this.plugin);
+        // 使用 Obsidian 的 Markdown 渲染方法
+        MarkdownView.renderMarkdown(content, container, '', this.plugin);
     }
 
     applyChanges() {
