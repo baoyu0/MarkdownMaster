@@ -392,23 +392,28 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用标题转换')
-            .setDesc('将标题转换为指定级别')
+            .setName(this.plugin.t('Enable Heading Conversion'))
+            .setDesc(this.plugin.t('Convert headings to specified levels'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableHeadingConversion)
                 .onChange(async (value) => {
                     this.plugin.settings.enableHeadingConversion = value;
                     await this.plugin.saveSettings();
+                    this.display(); // 重新加载设置页面以显示或隐藏子选项
                 }));
 
         if (this.plugin.settings.enableHeadingConversion) {
             new Setting(containerEl)
-                .setName('源标题级别')
-                .setDesc('选择要转换的源标题级别')
+                .setName(this.plugin.t('Source Heading Level'))
+                .setDesc(this.plugin.t('Select the source heading level for conversion'))
                 .addDropdown(dropdown => dropdown
                     .addOptions({
-                        'h1': '一级标题', 'h2': '二级标题', 'h3': '三级标题',
-                        'h4': '四级标题', 'h5': '五级标题', 'h6': '六级标题'
+                        'h1': this.plugin.t('First Level'),
+                        'h2': this.plugin.t('Second Level'),
+                        'h3': this.plugin.t('Third Level'),
+                        'h4': this.plugin.t('Fourth Level'),
+                        'h5': this.plugin.t('Fifth Level'),
+                        'h6': this.plugin.t('Sixth Level')
                     })
                     .setValue(this.plugin.settings.sourceHeadingLevel)
                     .onChange(async (value) => {
@@ -417,12 +422,16 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     }));
 
             new Setting(containerEl)
-                .setName('目标标题级别')
-                .setDesc('选择转换后的目标标题级别')
+                .setName(this.plugin.t('Target Heading Level'))
+                .setDesc(this.plugin.t('Select the target heading level for conversion'))
                 .addDropdown(dropdown => dropdown
                     .addOptions({
-                        'h1': '一级标题', 'h2': '二级标题', 'h3': '三级标题',
-                        'h4': '四级标题', 'h5': '五级标题', 'h6': '六级标题'
+                        'h1': this.plugin.t('First Level'),
+                        'h2': this.plugin.t('Second Level'),
+                        'h3': this.plugin.t('Third Level'),
+                        'h4': this.plugin.t('Fourth Level'),
+                        'h5': this.plugin.t('Fifth Level'),
+                        'h6': this.plugin.t('Sixth Level')
                     })
                     .setValue(this.plugin.settings.targetHeadingLevel)
                     .onChange(async (value) => {
@@ -431,8 +440,8 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     }));
 
             new Setting(containerEl)
-                .setName('递归标题转换')
-                .setDesc('递归转换所有子标题')
+                .setName(this.plugin.t('Recursive Heading Conversion'))
+                .setDesc(this.plugin.t('Convert all subheadings recursively'))
                 .addToggle(toggle => toggle
                     .setValue(this.plugin.settings.recursiveHeadingConversion)
                     .onChange(async (value) => {
@@ -442,14 +451,14 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName('启用链接清理')
-            .setDesc('根据自定义规则清理链接')
+            .setName(this.plugin.t('Enable Link Cleaning'))
+            .setDesc(this.plugin.t('Clean links based on custom rules'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableLinkCleaning)
                 .onChange(async (value) => {
                     this.plugin.settings.enableLinkCleaning = value;
                     await this.plugin.saveSettings();
-                    this.display(); // 刷新设置页面
+                    this.display(); // 重新加载设置页面以显示或隐藏子选项
                 }));
 
         if (this.plugin.settings.enableLinkCleaning) {

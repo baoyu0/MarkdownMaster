@@ -29,6 +29,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "Select the plugin language": "选择插件语言",
     "Export": "导出",
     "Import": "导入",
+    "First Level": "一级标题",
+    "Second Level": "二级标题",
+    "Third Level": "三级标题",
+    "Fourth Level": "四级标题",
+    "Fifth Level": "五级标题",
+    "Sixth Level": "六级标题",
   },
   en: {
     "Markdown Master Settings": "Markdown Master Settings",
@@ -50,5 +56,11 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "Select the plugin language": "Select the plugin language",
     "Export": "Export",
     "Import": "Import",
+    "First Level": "First Level",
+    "Second Level": "Second Level",
+    "Third Level": "Third Level",
+    "Fourth Level": "Fourth Level",
+    "Fifth Level": "Fifth Level",
+    "Sixth Level": "Sixth Level",
   }
 };
