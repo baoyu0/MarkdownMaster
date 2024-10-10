@@ -1,33 +1,66 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, HTMLElement as ObsidianHTMLElement } from 'obsidian';
 import { diffChars, Change } from 'diff';
 
+// 确保已安装 tslib
+import 'tslib';
+
 interface MarkdownMasterSettings {
+    formatOptions: {
+        content: FormatContentOptions;
+        structure: FormatStructureOptions;
+        style: FormatStyleOptions;
+        advanced: FormatAdvancedOptions;
+    };
+}
+
+interface FormatContentOptions {
     enableLinkRemoval: boolean;
-    enableHeadingConversion: boolean;
-    enableBoldRemoval: boolean;
     enableReferenceRemoval: boolean;
+    // ... 其他内容相关选项 ...
+}
+
+interface FormatStructureOptions {
+    enableHeadingConversion: boolean;
+    enableTitleNumbering: boolean;
+    // ... 其他结构相关选项 ...
+}
+
+interface FormatStyleOptions {
+    enableBoldRemoval: boolean;
+    enableTableFormat: boolean;
+    // ... 其他样式相关选项 ...
+}
+
+interface FormatAdvancedOptions {
     customRegexRules: { pattern: string; replacement: string }[];
     enableAutoFormat: boolean;
-    enableTableFormat: boolean;
     enableCodeHighlight: boolean;
     enableImageOptimization: boolean;
-    enableTextStatistics: boolean;
-    enableTitleNumbering: boolean;
+    // ... 其他高级选项 ...
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
-    enableLinkRemoval: true,
-    enableHeadingConversion: true,
-    enableBoldRemoval: true,
-    enableReferenceRemoval: true,
-    customRegexRules: [],
-    enableAutoFormat: false,
-    enableTableFormat: true,
-    enableCodeHighlight: true,
-    enableImageOptimization: true,
-    enableTextStatistics: false,
-    enableTitleNumbering: true,
-}
+    formatOptions: {
+        content: {
+            enableLinkRemoval: true,
+            enableReferenceRemoval: true,
+        },
+        structure: {
+            enableHeadingConversion: true,
+            enableTitleNumbering: true,
+        },
+        style: {
+            enableBoldRemoval: true,
+            enableTableFormat: true,
+        },
+        advanced: {
+            customRegexRules: [],
+            enableAutoFormat: false,
+            enableCodeHighlight: true,
+            enableImageOptimization: true,
+        },
+    },
+};
 
 export default class MarkdownMasterPlugin extends Plugin {
     settings!: MarkdownMasterSettings;
@@ -69,7 +102,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         });
 
         // 修改自动格式化功能的事件注册
-        if (this.settings.enableAutoFormat) {
+        if (this.settings.formatOptions.advanced.enableAutoFormat) {
             this.fileOpenRef = this.registerEvent(
                 this.app.workspace.on('file-open', (file: TFile) => {
                     if (file && file.extension === 'md') {
@@ -101,17 +134,18 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     formatMarkdown(content: string): string {
         let formatted = content;
+        const { formatOptions } = this.settings;
 
-        if (this.settings.enableLinkRemoval) {
+        if (formatOptions.content.enableLinkRemoval) {
             formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
         }
-        if (this.settings.enableHeadingConversion) {
+        if (formatOptions.structure.enableHeadingConversion) {
             formatted = formatted.replace(/^##/gm, '#');
         }
-        if (this.settings.enableBoldRemoval) {
+        if (formatOptions.style.enableBoldRemoval) {
             formatted = formatted.replace(/\*\*/g, '');
         }
-        if (this.settings.enableReferenceRemoval) {
+        if (formatOptions.content.enableReferenceRemoval) {
             formatted = formatted.replace(/\[\d+\]/g, '');
         }
 
@@ -120,24 +154,24 @@ export default class MarkdownMasterPlugin extends Plugin {
         formatted = formatted.replace(/\n{3,}/g, '\n\n');
         formatted = formatted.replace(/^(\d+)\.([^\s])/gm, '$1. $2');
 
-        this.settings.customRegexRules.forEach(rule => {
+        formatOptions.advanced.customRegexRules.forEach(rule => {
             const regex = new RegExp(rule.pattern, 'g');
             formatted = formatted.replace(regex, rule.replacement);
         });
 
-        if (this.settings.enableTableFormat) {
+        if (formatOptions.style.enableTableFormat) {
             formatted = this.formatTables(formatted);
         }
 
-        if (this.settings.enableCodeHighlight) {
+        if (formatOptions.advanced.enableCodeHighlight) {
             formatted = this.highlightCodeBlocks(formatted);
         }
 
-        if (this.settings.enableImageOptimization) {
+        if (formatOptions.advanced.enableImageOptimization) {
             formatted = this.optimizeImageLinks(formatted);
         }
 
-        if (this.settings.enableTitleNumbering) {
+        if (formatOptions.structure.enableTitleNumbering) {
             // 修改这个正则表达式以匹配所有级别的标题
             formatted = formatted.replace(/^(#{1,6}\s+(?:\d+\.)*\d+(?:\s*-\s*)?)\s*(?:\d+\.)*\s*(.+)$/gm, '$1 $2');
         }
@@ -415,120 +449,37 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         containerEl.empty();
         containerEl.createEl('h2', { text: 'Markdown Master 设置' });
 
+        this.addContentFormatSettings(containerEl);
+        this.addStructureFormatSettings(containerEl);
+        this.addStyleFormatSettings(containerEl);
+        this.addAdvancedFormatSettings(containerEl);
+    }
+
+    addContentFormatSettings(containerEl: ObsidianHTMLElement) {
+        containerEl.createEl('h3', { text: '内容格式化选项' });
+        
         new Setting(containerEl)
             .setName('删除特定链接')
             .setDesc('删除格式为 [数字] http://... 的链接')
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableLinkRemoval)
+                .setValue(this.plugin.settings.formatOptions.content.enableLinkRemoval)
                 .onChange(async (value) => {
-                    this.plugin.settings.enableLinkRemoval = value;
+                    this.plugin.settings.formatOptions.content.enableLinkRemoval = value;
                     await this.plugin.saveSettings();
                 }));
+        
+        // ... 添加其他内容相关的设置 ...
+    }
 
-        new Setting(containerEl)
-            .setName('转换标题')
-            .setDesc('将所有二级标题转换为一级标题')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableHeadingConversion)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableHeadingConversion = value;
-                    await this.plugin.saveSettings();
-                }));
+    addStructureFormatSettings(containerEl: ObsidianHTMLElement) {
+        // 实现结构格式化设置
+    }
 
-        new Setting(containerEl)
-            .setName('删除粗体')
-            .setDesc('删除所有粗体标记')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableBoldRemoval)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableBoldRemoval = value;
-                    await this.plugin.saveSettings();
-                }));
+    addStyleFormatSettings(containerEl: ObsidianHTMLElement) {
+        // 实现样式格式化设置
+    }
 
-        new Setting(containerEl)
-            .setName('删除引用')
-            .setDesc('删除所有数字引用标记')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableReferenceRemoval)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableReferenceRemoval = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('自定义正则表达式规则')
-            .setDesc('添加自定义正则表达式规则（每行一个，格式：正则表达式|||替换内容）')
-            .addTextArea(text => text
-                .setPlaceholder('正则表达式|||替换内容')
-                .setValue(this.plugin.settings.customRegexRules.map(rule => `${rule.pattern}|||${rule.replacement}`).join('\n'))
-                .onChange(async (value) => {
-                    this.plugin.settings.customRegexRules = value.split('\n')
-                        .map(line => {
-                            const [pattern, replacement] = line.split('|||');
-                            return { pattern, replacement };
-                        })
-                        .filter(rule => rule.pattern && rule.replacement);
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('启用自动格式化')
-            .setDesc('打开文件时自动格式化')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableAutoFormat)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableAutoFormat = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('启用表格格式化')
-            .setDesc('自动对齐表格列')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableTableFormat)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableTableFormat = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('启用代码块高亮')
-            .setDesc('优化代码块格式')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableCodeHighlight)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableCodeHighlight = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('启用图片链接优化')
-            .setDesc('将 HTTP 图片链接转换为 HTTPS')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableImageOptimization)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableImageOptimization = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('启用文本统计')
-            .setDesc('在状态栏显示文本统计信息')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableTextStatistics)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableTextStatistics = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('优化标题编号')
-            .setDesc('保留标准的Markdown标题序号，删除额外的数字编号')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableTitleNumbering)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableTitleNumbering = value;
-                    await this.plugin.saveSettings();
-                }));
+    addAdvancedFormatSettings(containerEl: ObsidianHTMLElement) {
+        // 实现高级格式化设置
     }
 }
