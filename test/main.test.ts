@@ -56,6 +56,7 @@ describe('MarkdownMasterPlugin', () => {
       enableTextDeletion: false,
       textDeletionRules: [],
       textDeletionHistory: [],
+      language: 'en', // 添加这一行
       formatRules: [
         {
           id: 'headings',
