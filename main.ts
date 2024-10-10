@@ -158,6 +158,15 @@ export default class MarkdownMasterPlugin extends Plugin {
                 color: #24292e;
                 text-decoration: line-through;
             }
+            .markdown-master-regex-help {
+                margin-left: 10px;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+            .markdown-master-regex-help:hover {
+                text-decoration: underline;
+            }
         `);
     }
 
@@ -221,7 +230,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                             const currentLevel = match.trim().length;
                             let newLevel = currentLevel + levelDiff;
                             
-                            // 确保新的标题级别在1到6之间
+                            // 确保新的标级别在1到6之间
                             newLevel = Math.max(1, Math.min(6, newLevel));
                             
                             return '#'.repeat(newLevel) + ' ';
@@ -364,7 +373,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
     }
 
-    // 新增的文本统计函数
+    // 新增的文本计函数
     showTextStatistics() {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (!activeView) {
@@ -615,7 +624,23 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
     addContentFormatSettings(containerEl: ObsidianHTMLElement) {
         console.log("开始添加内容格式化设置");
-        containerEl.createEl('h3', { text: '正则表达式替换' });
+        const titleEl = containerEl.createEl('h3', { text: '正则表达式替换 ' });
+        
+        // 添加一个链接到正则表达式说明文档
+        const regexHelpLink = titleEl.createEl('a', {
+            text: '📘',
+            href: '#',
+            cls: 'markdown-master-regex-help',
+            attr: { 'aria-label': '正则表达式帮助' }
+        });
+        
+        // 使用类型守卫来确保regexHelpLink是HTMLAnchorElement
+        if (regexHelpLink instanceof HTMLAnchorElement) {
+            regexHelpLink.addEventListener('click', (e: MouseEvent) => {
+                e.preventDefault();
+                this.showRegexHelpModal();
+            });
+        }
         
         new Setting(containerEl)
             .setName('启用正则表达式替换')
@@ -650,11 +675,17 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.createRegexRuleSetting(regexReplacementContainer, regexObj, index);
                 });
             } else {
-                console.log("regexReplacements 数组��存在");
+                console.log("regexReplacements 数组不存在");
             }
         } else {
             console.log("正则表达式替换未启用");
         }
+    }
+
+    // 添加一个新方法来显示正则表达式帮助模态框
+    private showRegexHelpModal() {
+        const modal = new RegexHelpModal(this.app);
+        modal.open();
     }
 
     private async addNewRegexRule() {
@@ -715,5 +746,52 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
     addAdvancedFormatSettings(containerEl: ObsidianHTMLElement) {
         // 实现高级格式化设置
+    }
+}
+
+// 添加一个新的模态框类来显示正则表达式帮助
+class RegexHelpModal extends Modal {
+    constructor(app: App) {
+        super(app);
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl('h2', { text: '正则表达式帮助' });
+
+        const content = contentEl.createEl('div');
+        
+        content.createEl('p', { text: '正则表达式是一种强大的文本匹配和操作工具。以下是一些基本语法：' });
+        const ul1 = content.createEl('ul');
+        [
+            { code: '.', desc: '匹配任意单个字符' },
+            { code: '*', desc: '匹配前面的元素零次或多次' },
+            { code: '+', desc: '匹配前面的元素一次或多次' },
+            { code: '?', desc: '匹配前面的元素零次或一次' },
+            { code: '^', desc: '匹配行的开始' },
+            { code: '$', desc: '匹配行的结束' },
+            { code: '[]', desc: '匹配方括号内的任意一个字符' },
+            { code: '[^]', desc: '匹配不在方括号内的任意一个字符' }
+        ].forEach(item => {
+            const li = ul1.createEl('li');
+            li.createEl('code', { text: item.code });
+            li.createEl('span', { text: ` - ${item.desc}` });
+        });
+
+        content.createEl('p', { text: '更多详细信息，请访问：' });
+        const ul2 = content.createEl('ul');
+        [
+            { text: 'MDN 正则表达式指南', href: 'https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide/Regular_Expressions' },
+            { text: 'Regex101 - 在线正则表达式测试工具', href: 'https://regex101.com/' }
+        ].forEach(item => {
+            const li = ul2.createEl('li');
+            li.createEl('a', { text: item.text, href: item.href, attr: { target: '_blank' } });
+        });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
     }
 }
