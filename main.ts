@@ -358,6 +358,12 @@ export default class MarkdownMasterPlugin extends Plugin {
             this.settingTab.display();
         }
     }
+
+    async applyFormatRules(content: string): Promise<string> {
+        // 这里实现你的格式化逻辑
+        // 例如：
+        return content.replace(/\s+/g, ' ').trim();
+    }
 }
 
 class MarkdownMasterSettingTab extends PluginSettingTab {
@@ -640,11 +646,11 @@ class FormatPreviewModal extends Modal {
 
         const originalDiv = contentEl.createDiv();
         originalDiv.createEl('h3', {text: this.plugin.t('Original')});
-        this.renderMarkdown(originalDiv, this.originalContent);
+        this.renderMarkdown(originalDiv as unknown as HTMLElement, this.originalContent);
 
         const formattedDiv = contentEl.createDiv();
         formattedDiv.createEl('h3', {text: this.plugin.t('Formatted')});
-        this.renderMarkdown(formattedDiv, this.formattedContent);
+        this.renderMarkdown(formattedDiv as unknown as HTMLElement, this.formattedContent);
 
         const buttonContainer = contentEl.createDiv({cls: 'button-container'});
         const applyButton = buttonContainer.createEl('button', {text: this.plugin.t('Apply Changes')});
@@ -659,9 +665,8 @@ class FormatPreviewModal extends Modal {
     }
 
     renderMarkdown(container: HTMLElement, content: string) {
-        const markdownView = new MarkdownView(this.app);
-        markdownView.setViewData(content, false);
-        container.appendChild(markdownView.contentEl);
+        // 使用 Obsidian 的 MarkdownRenderer
+        (this.app as any).internalPlugins.plugins['markdown-importer'].instance.renderer.render(content, container);
     }
 
     applyChanges() {
