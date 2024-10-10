@@ -19,6 +19,7 @@ interface FormatContentOptions {
 interface FormatStructureOptions {
     enableHeadingConversion: boolean;
     enableTitleNumbering: boolean;
+    headingConversionLevel: number; // 新增：用于控制标题转换级别
     // ... 其他结构相关选项 ...
 }
 
@@ -45,6 +46,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
         structure: {
             enableHeadingConversion: true,
             enableTitleNumbering: true,
+            headingConversionLevel: 1, // 默认将所有标题转换为一级标题
         },
         style: {
             enableBoldRemoval: true,
@@ -82,7 +84,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         this.addCommand({
             id: 'undo-format',
-            name: '撤销上次格式化',
+            name: '撤销次格式化',
             callback: () => this.undoFormat()
         });
 
@@ -137,7 +139,9 @@ export default class MarkdownMasterPlugin extends Plugin {
             formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
         }
         if (formatOptions.structure.enableHeadingConversion) {
-            formatted = formatted.replace(/^##/gm, '#');
+            const level = formatOptions.structure.headingConversionLevel;
+            const regex = new RegExp(`^#{1,6}`, 'gm');
+            formatted = formatted.replace(regex, match => '#'.repeat(level));
         }
         if (formatOptions.style.enableBoldRemoval) {
             formatted = formatted.replace(/\*\*/g, '');
@@ -227,7 +231,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         }).open();
     }
 
-    // 修改表格格式化函数，使用 String.prototype.padEnd 的替代方法
+    // 修表格格式化函数，使用 String.prototype.padEnd 的替代方法
     formatTables(content: string): string {
         const tableRegex = /\|(.+)\|/g;
         return content.replace(tableRegex, (match) => {
@@ -469,7 +473,39 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
     }
 
     addStructureFormatSettings(containerEl: ObsidianHTMLElement) {
-        // 实现结构格式化设置
+        containerEl.createEl('h3', { text: '结构格式化选项' });
+        
+        new Setting(containerEl)
+            .setName('启用标题转换')
+            .setDesc('将所有标题转换为定')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.structure.enableHeadingConversion)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.structure.enableHeadingConversion = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        (new Setting(containerEl) as any)
+            .setName('标题转换级别')
+            .setDesc('选择要将所有标题转换到的级别')
+            .addDropdown((dropdown: any) => {
+                dropdown
+                    .addOptions({
+                        '1': '一级标题',
+                        '2': '二级标题',
+                        '3': '三级标题',
+                        '4': '四级标题',
+                        '5': '五级标题',
+                        '6': '六级标题'
+                    })
+                    .setValue(this.plugin.settings.formatOptions.structure.headingConversionLevel.toString())
+                    .onChange(async (value: string) => {
+                        this.plugin.settings.formatOptions.structure.headingConversionLevel = parseInt(value);
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // ... 添加其他结构相关的设置
     }
 
     addStyleFormatSettings(containerEl: ObsidianHTMLElement) {

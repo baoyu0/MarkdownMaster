@@ -17,8 +17,14 @@ if (!/^\d+\.\d+\.\d+$/.test(newVersion)) {
 }
 
 try {
-    // 更新版本号
-    execSync(`node update-version.js ${newVersion}`, { stdio: 'inherit' });
+    // 更新 package.json 中的版本号
+    execSync(`npm version ${newVersion} --no-git-tag-version`, { stdio: 'inherit' });
+
+    // 更新 manifest.json 中的版本号
+    const manifestPath = path.join(__dirname, 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifest.version = newVersion;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
     // 构建项目
     execSync('npm run build', { stdio: 'inherit' });
