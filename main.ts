@@ -1,4 +1,4 @@
-import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice, Modal } from 'obsidian';
+import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice, Modal, MarkdownRenderer } from 'obsidian';
 import { TRANSLATIONS, SupportedLanguage } from './src/i18n';
 
 // 添加自定义的 debounce 函数
@@ -646,11 +646,11 @@ class FormatPreviewModal extends Modal {
 
         const originalDiv = contentEl.createDiv();
         originalDiv.createEl('h3', {text: this.plugin.t('Original')});
-        this.renderMarkdown(originalDiv as HTMLElement, this.originalContent);
+        this.renderMarkdown(originalDiv as unknown as HTMLElement, this.originalContent);
 
         const formattedDiv = contentEl.createDiv();
         formattedDiv.createEl('h3', {text: this.plugin.t('Formatted')});
-        this.renderMarkdown(formattedDiv as HTMLElement, this.formattedContent);
+        this.renderMarkdown(formattedDiv as unknown as HTMLElement, this.formattedContent);
 
         const buttonContainer = contentEl.createDiv({cls: 'button-container'});
         const applyButton = buttonContainer.createEl('button', {text: this.plugin.t('Apply Changes')});
@@ -665,8 +665,14 @@ class FormatPreviewModal extends Modal {
     }
 
     renderMarkdown(container: HTMLElement, content: string) {
+        // 创建一个临时的 div 元素来存放渲染后的内容
+        const tempElement = document.createElement('div');
+        
         // 使用 Obsidian 的 Markdown 渲染方法
-        MarkdownView.renderMarkdown(content, container, '', this.plugin);
+        MarkdownRenderer.renderMarkdown(content, tempElement, '', this.plugin);
+        
+        // 将渲染后的内容添加到容器中
+        container.appendChild(tempElement);
     }
 
     applyChanges() {
