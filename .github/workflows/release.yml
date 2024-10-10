@@ -15,8 +15,12 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: '14'
-    - run: npm ci
-    - run: npm run build
+    - name: Clear npm cache
+      run: npm cache clean --force
+    - name: Install dependencies
+      run: npm install
+    - name: Build
+      run: npm run build
 
     - name: Create Release
       id: create_release
@@ -41,3 +45,6 @@ jobs:
         asset_path: ./release.zip
         asset_name: release.zip
         asset_content_type: application/zip
+
+    - name: List node_modules
+      run: ls -R ./node_modules | grep ":$" | sed -e 's/:$//' -e 's/[^-][^\/]*\//  /g' -e 's/^/  /' -e 's/-/|/'
