@@ -1,9 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, HTMLElement as ObsidianHTMLElement } from 'obsidian';
 import { diffChars, Change } from 'diff';
 
-// 确保已安装 tslib
-import 'tslib';
-
 interface MarkdownMasterSettings {
     formatOptions: {
         content: FormatContentOptions;
