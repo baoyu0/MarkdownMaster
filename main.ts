@@ -1,12 +1,29 @@
 import { Plugin, PluginSettingTab, Setting, App, Editor, MarkdownView, TFile, Notice, Modal } from 'obsidian';
+import { TRANSLATIONS, SupportedLanguage } from './src/i18n';
+
+// 添加自定义的 debounce 函数
+function debounce(func: Function, wait: number, immediate = false) {
+    let timeout: NodeJS.Timeout | null = null;
+    return function(this: any, ...args: any[]) {
+        const context = this;
+        const later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        const callNow = immediate && !timeout;
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
+}
 
 export interface MarkdownMasterSettings {
     enableAutoFormat: boolean;
     autoFormatOnSave: boolean;
     formatTemplate: string;
     enableHeadingConversion: boolean;
-    sourceHeadingLevel: string;
-    targetHeadingLevel: string;
+    sourceHeadingLevel: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+    targetHeadingLevel: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
     recursiveHeadingConversion: boolean;
     enableListFormatting: boolean;
     listBulletChar: string;
@@ -24,6 +41,7 @@ export interface MarkdownMasterSettings {
     enableTextDeletion: boolean;
     textDeletionRules: Array<{ pattern: string; enabled: boolean; comment: string }>;
     textDeletionHistory: Array<{ pattern: string; deletedText: string; timestamp: number }>;
+    language: SupportedLanguage;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -52,46 +70,60 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     enableTextDeletion: false,
     textDeletionRules: [],
     textDeletionHistory: [],
+    language: 'zh',
 };
 
 export default class MarkdownMasterPlugin extends Plugin {
     settings: MarkdownMasterSettings;
 
+    private readonly debouncedSaveSettings = debounce(async () => {
+        await this.saveSettings();
+    }, 2000, true);
+
+    t(key: string): string {
+        return TRANSLATIONS[this.settings.language][key] || key;
+    }
+
     async onload() {
-        await this.loadSettings();
+        try {
+            await this.loadSettings();
 
-        this.addRibbonIcon('pencil', 'Markdown Master', () => {
-            this.formatMarkdown();
-        });
+            this.addRibbonIcon('pencil', 'Markdown Master', () => {
+                this.formatMarkdown();
+            });
 
-        this.addCommand({
-            id: 'format-markdown',
-            name: 'Format Current File',
-            callback: () => this.formatMarkdown(),
-        });
+            this.addCommand({
+                id: 'format-markdown',
+                name: 'Format Current File',
+                callback: () => this.formatMarkdown(),
+            });
 
-        this.addCommand({
-            id: 'format-all-markdown',
-            name: 'Format All Markdown Files',
-            callback: () => this.formatAllMarkdownFiles(),
-        });
+            this.addCommand({
+                id: 'format-all-markdown',
+                name: 'Format All Markdown Files',
+                callback: () => this.formatAllMarkdownFiles(),
+            });
 
-        this.addCommand({
-            id: 'toggle-auto-format',
-            name: 'Toggle Auto Format on Save',
-            callback: () => this.toggleAutoFormat(),
-        });
+            this.addCommand({
+                id: 'toggle-auto-format',
+                name: 'Toggle Auto Format on Save',
+                callback: () => this.toggleAutoFormat(),
+            });
 
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
 
-        if (this.settings.autoFormatOnSave) {
-            this.registerEvent(
-                this.app.vault.on('modify', (file: TFile) => {
-                    if (file.extension === 'md') {
-                        this.formatFile(file);
-                    }
-                })
-            );
+            if (this.settings.autoFormatOnSave) {
+                this.registerEvent(
+                    this.app.vault.on('modify', (file: TFile) => {
+                        if (file.extension === 'md') {
+                            this.formatFile(file);
+                        }
+                    })
+                );
+            }
+        } catch (error) {
+            console.error('Failed to load Markdown Master plugin:', error);
+            new Notice('Markdown Master 插件加载失败,请检查控制台日志');
         }
     }
 
@@ -100,7 +132,12 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async saveSettings() {
-        await this.saveData(this.settings);
+        try {
+            await this.saveData(this.settings);
+        } catch (error) {
+            console.error('Failed to save Markdown Master settings:', error);
+            new Notice('Markdown Master 设置保存失败');
+        }
     }
 
     async formatMarkdown() {
@@ -311,6 +348,12 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.saveSettings();
         new Notice(`Auto format on save ${this.settings.autoFormatOnSave ? 'enabled' : 'disabled'}`);
     }
+
+    // 在设置更改时使用
+    async updateSetting<K extends keyof MarkdownMasterSettings>(key: K, value: MarkdownMasterSettings[K]) {
+        this.settings[key] = value;
+        this.debouncedSaveSettings();
+    }
 }
 
 class MarkdownMasterSettingTab extends PluginSettingTab {
@@ -324,11 +367,11 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
-        containerEl.createEl('h2', { text: 'Markdown Master Settings' });
+        containerEl.createEl('h2', { text: this.plugin.t('Markdown Master Settings') });
 
         new Setting(containerEl)
-            .setName('Enable Auto Format')
-            .setDesc('Automatically format Markdown content on save')
+            .setName(this.plugin.t('Enable Auto Format'))
+            .setDesc(this.plugin.t('Automatically format Markdown content on save'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoFormatOnSave)
                 .onChange(async (value) => {
@@ -337,8 +380,8 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Enable Heading Conversion')
-            .setDesc('Convert headings to specified levels')
+            .setName('启用标题转换')
+            .setDesc('将标题转换为指定级别')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableHeadingConversion)
                 .onChange(async (value) => {
@@ -348,36 +391,36 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         if (this.plugin.settings.enableHeadingConversion) {
             new Setting(containerEl)
-                .setName('Source Heading Level')
-                .setDesc('Select the source heading level for conversion')
+                .setName('源标题级别')
+                .setDesc('选择要转换的源标题级别')
                 .addDropdown(dropdown => dropdown
                     .addOptions({
-                        'h1': 'H1', 'h2': 'H2', 'h3': 'H3',
-                        'h4': 'H4', 'h5': 'H5', 'h6': 'H6'
+                        'h1': '一级标题', 'h2': '二级标题', 'h3': '三级标题',
+                        'h4': '四级标题', 'h5': '五级标题', 'h6': '六级标题'
                     })
                     .setValue(this.plugin.settings.sourceHeadingLevel)
                     .onChange(async (value) => {
-                        this.plugin.settings.sourceHeadingLevel = value;
+                        this.plugin.settings.sourceHeadingLevel = value as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
                         await this.plugin.saveSettings();
                     }));
 
             new Setting(containerEl)
-                .setName('Target Heading Level')
-                .setDesc('Select the target heading level for conversion')
+                .setName('目标标题级别')
+                .setDesc('选择转换后的目标标题级别')
                 .addDropdown(dropdown => dropdown
                     .addOptions({
-                        'h1': 'H1', 'h2': 'H2', 'h3': 'H3',
-                        'h4': 'H4', 'h5': 'H5', 'h6': 'H6'
+                        'h1': '一级标题', 'h2': '二级标题', 'h3': '三级标题',
+                        'h4': '四级标题', 'h5': '五级标题', 'h6': '六级标题'
                     })
                     .setValue(this.plugin.settings.targetHeadingLevel)
                     .onChange(async (value) => {
-                        this.plugin.settings.targetHeadingLevel = value;
+                        this.plugin.settings.targetHeadingLevel = value as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
                         await this.plugin.saveSettings();
                     }));
 
             new Setting(containerEl)
-                .setName('Recursive Heading Conversion')
-                .setDesc('Convert all subheadings recursively')
+                .setName('递归标题转换')
+                .setDesc('递归转换所有子标题')
                 .addToggle(toggle => toggle
                     .setValue(this.plugin.settings.recursiveHeadingConversion)
                     .onChange(async (value) => {
@@ -387,8 +430,8 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName('Enable Link Cleaning')
-            .setDesc('Clean links based on custom rules')
+            .setName('启用链接清理')
+            .setDesc('根据自定义规则清理链接')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableLinkCleaning)
                 .onChange(async (value) => {
@@ -508,8 +551,8 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName('Enable Symbol Deletion')
-            .setDesc('Delete specific symbols from the text')
+            .setName('启用符号删除')
+            .setDesc('从文本中删除特定符号')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableSymbolDeletion)
                 .onChange(async (value) => {
@@ -520,8 +563,8 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         if (this.plugin.settings.enableSymbolDeletion) {
             new Setting(containerEl)
-                .setName('Symbols to Delete')
-                .setDesc('Enter symbols to be deleted (without spaces)')
+                .setName('要删除的符号')
+                .setDesc('输入要删除的符号（不含空格）')
                 .addText(text => text
                     .setValue(this.plugin.settings.symbolsToDelete)
                     .onChange(async (value) => {
@@ -575,6 +618,21 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                         }
                     };
                     input.click();
+                }));
+
+        new Setting(containerEl)
+            .setName('Language')
+            .setDesc('Select the plugin language')
+            .addDropdown(dropdown => dropdown
+                .addOptions({
+                    'en': 'English',
+                    'zh': '中文'
+                })
+                .setValue(this.plugin.settings.language)
+                .onChange(async (value: SupportedLanguage) => {
+                    this.plugin.settings.language = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // 重新加载设置页面以应用新语言
                 }));
 
         // 添加更多设置项...
