@@ -19,6 +19,7 @@ interface FormatContentOptions {
 interface FormatStructureOptions {
     enableHeadingConversion: boolean;
     headingConversionRules: { [key: string]: number };
+    enableCascadingConversion: boolean;
     // ... 其他结构相关选项 ...
 }
 
@@ -44,8 +45,9 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
         },
         structure: {
             enableHeadingConversion: true,
+            enableCascadingConversion: true, // 新增选项
             headingConversionRules: {
-                1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 // 默认所有级别都不转换
+                1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0
             },
         },
         style: {
@@ -154,21 +156,34 @@ export default class MarkdownMasterPlugin extends Plugin {
         let formatted = content;
         const { formatOptions } = this.settings;
 
-        if (formatOptions.content.enableLinkRemoval) {
-            formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
-        }
         if (formatOptions.structure.enableHeadingConversion) {
             const rules = formatOptions.structure.headingConversionRules;
             if (rules && typeof rules === 'object') {
-                Object.entries(rules).forEach(([from, to]) => {
-                    const fromLevel = parseInt(from);
-                    const toLevel = to as number;
+                // 首先，按照标题级别从高到低排序
+                const sortedLevels = Object.keys(rules).map(Number).sort((a, b) => a - b);
+                
+                for (const fromLevel of sortedLevels) {
+                    const toLevel = rules[fromLevel];
                     if (fromLevel !== toLevel && toLevel !== 0) {
-                        const regex = new RegExp(`^#{${fromLevel}}\\s+`, 'gm');
-                        formatted = formatted.replace(regex, '#'.repeat(toLevel) + ' ');
+                        const levelDiff = toLevel - fromLevel;
+                        const regex = new RegExp(`^#{${fromLevel},6}\\s+`, 'gm');
+                        
+                        formatted = formatted.replace(regex, (match) => {
+                            const currentLevel = match.trim().length;
+                            let newLevel = currentLevel + levelDiff;
+                            
+                            // 确保新的标题级别在1到6之间
+                            newLevel = Math.max(1, Math.min(6, newLevel));
+                            
+                            return '#'.repeat(newLevel) + ' ';
+                        });
                     }
-                });
+                }
             }
+        }
+
+        if (formatOptions.content.enableLinkRemoval) {
+            formatted = formatted.replace(/^\[(\d+)\]\s+(https?:\/\/\S+)$/gm, '');
         }
         if (formatOptions.style.enableBoldRemoval) {
             formatted = formatted.replace(/\*\*/g, '');
@@ -240,7 +255,7 @@ export default class MarkdownMasterPlugin extends Plugin {
             const formattedContent = this.formatMarkdown(content);
             await this.app.vault.modify(file, formattedContent);
         }
-        new Notice('批量格式化完成');
+        new Notice('批格式化完成');
     }
 
     showFormatHistory() {
@@ -504,6 +519,16 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.formatOptions.structure.enableHeadingConversion)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.structure.enableHeadingConversion = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('级联标题转换')
+            .setDesc('当转换某个级别的标题时，同步转换其所有子标题')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.structure.enableCascadingConversion)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.structure.enableCascadingConversion = value;
                     await this.plugin.saveSettings();
                 }));
 
