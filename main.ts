@@ -179,6 +179,34 @@ export default class MarkdownMasterPlugin extends Plugin {
                 white-space: pre-wrap;
                 word-wrap: break-word;
             }
+
+            .markdown-master-nested-settings {
+                margin-left: 20px;
+                border-left: 2px solid var(--background-modifier-border);
+                padding-left: 20px;
+            }
+
+            .markdown-master-regex-rule {
+                margin-bottom: 20px;
+                padding: 10px;
+                border: 1px solid var(--background-modifier-border);
+                border-radius: 5px;
+            }
+
+            .markdown-master-regex-rule .setting-item {
+                border-top: none;
+                padding-top: 0;
+            }
+
+            .markdown-master-regex-buttons {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 10px;
+            }
+
+            .markdown-master-regex-buttons button {
+                margin-left: 10px;
+            }
         `);
     }
 
@@ -385,7 +413,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
     }
 
-    // 新增的文本计函数
+    // 新的文本计函数
     showTextStatistics() {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (!activeView) {
@@ -713,35 +741,50 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
     private createRegexRuleSetting(container: ObsidianHTMLElement, regexObj: { regex: string; replacement: string; description: string; enabled: boolean }, index: number) {
         console.log("创建规则设置:", index);
-        new Setting(container)
+        const ruleContainer = container.createEl('div', { cls: 'markdown-master-regex-rule' });
+
+        new Setting(ruleContainer)
             .setName(`规则 ${index + 1}`)
             .addToggle(toggle => toggle
                 .setValue(regexObj.enabled)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.content.regexReplacements[index].enabled = value;
                     await this.plugin.saveSettings();
-                }))
+                }));
+
+        new Setting(ruleContainer)
+            .setName('正则表达式')
             .addTextArea(text => text
                 .setPlaceholder('输入正则表达式')
                 .setValue(regexObj.regex)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.content.regexReplacements[index].regex = value;
                     await this.plugin.saveSettings();
-                }))
+                }));
+
+        new Setting(ruleContainer)
+            .setName('替换内容')
             .addTextArea(text => text
                 .setPlaceholder('输入替换内容')
                 .setValue(regexObj.replacement)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.content.regexReplacements[index].replacement = value;
                     await this.plugin.saveSettings();
-                }))
+                }));
+
+        new Setting(ruleContainer)
+            .setName('说明')
             .addTextArea(text => text
                 .setPlaceholder('输入说明')
                 .setValue(regexObj.description)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.content.regexReplacements[index].description = value;
                     await this.plugin.saveSettings();
-                }))
+                }));
+
+        const buttonContainer = ruleContainer.createEl('div', { cls: 'markdown-master-regex-buttons' });
+
+        new Setting(buttonContainer)
             .addButton(button => button
                 .setButtonText('测试')
                 .onClick(() => {
