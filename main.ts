@@ -15,6 +15,9 @@ interface MarkdownMasterSettings {
         style: FormatStyleOptions;
         advanced: FormatAdvancedOptions;
     };
+    formatYAMLFrontMatter: boolean;
+    formatMathEquations: boolean;
+    formatCustomCSSClasses: boolean;
 }
 
 interface FormatContentOptions {
@@ -87,6 +90,9 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
             enableAdvancedCodeBlockProcessing: true,
         },
     },
+    formatYAMLFrontMatter: true,
+    formatMathEquations: true,
+    formatCustomCSSClasses: true,
 };
 
 const REGEX_PRESETS = [
@@ -115,7 +121,7 @@ const REGEX_PRESETS = [
         description: '删除每行末尾的空格和制表符'
     },
     {
-        name: 'URL转为链接',
+        name: 'URL��为链接',
         regex: '(https?://\\S+)(?=[\\s)])',
         replacement: '[$1]($1)',
         description: '将纯文本URL转换为Markdown链接格式'
@@ -306,8 +312,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async loadSettings() {
-        const loadedData = await this.loadData();
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
         // 确保 regexReplacements 数组存在
         if (!this.settings.formatOptions.content.regexReplacements) {
@@ -596,7 +601,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     private formatYamlMetadata(content: string): string {
         // 实现YAML前置元数据格式化逻辑
-        // 这里只是一个简单的示例,实际实���可能需要更复杂的逻辑
+        // 这里只是一个简单的示例,实际实可能需要更复杂的逻辑
         const yamlRegex = /^---\n([\s\S]*?)\n---/;
         return content.replace(yamlRegex, (match, yaml) => {
             const formattedYaml = yaml.split('\n').map((line: string) => line.trim()).join('\n');
@@ -605,20 +610,33 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private formatMathEquations(content: string): string {
-        // 实现数学公式格式化逻辑
-        // 这里只是一个简单的示例,实际实可能需要更复杂的逻辑
-        return content.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
-            const formattedMath = math.trim().replace(/\s+/g, ' ');
-            return `$$\n${formattedMath}\n$$`;
+        const inlineMathRegex = /\$(.+?)\$/g;
+        const blockMathRegex = /\$\$([\s\S]+?)\$\$/g;
+
+        // 格式化行内数学公式
+        content = content.replace(inlineMathRegex, (match, equation) => {
+            return `$${equation.trim()}$`;
         });
+
+        // 格式化块级数学公式
+        content = content.replace(blockMathRegex, (match, equation) => {
+            const formattedEquation = equation.split('\n')
+                .map((line: string) => line.trim())  // 添加类型注解
+                .join('\n');
+            return `$$\n${formattedEquation}\n$$`;
+        });
+
+        return content;
     }
 
     private formatCustomCssClasses(content: string): string {
-        // 实现自定义CSS类格式化逻辑
-        // 这里只是一个简单的示例,实际实现可能需要更复杂的逻辑
-        return content.replace(/\{([^}]+)\}/g, (match, classes) => {
-            const formattedClasses = classes.split(' ').filter(Boolean).join(' ');
-            return `{${formattedClasses}}`;
+        const cssClassRegex = /\{\.([^}]+)\}/g;
+        return content.replace(cssClassRegex, (match, classes) => {
+            const formattedClasses = classes.split('.')
+                .filter((cls: string) => cls.trim() !== '')  // 添加类型注解
+                .map((cls: string) => cls.trim())  // 添加类型注解
+                .join('.');
+            return `{.${formattedClasses}}`;
         });
     }
 
@@ -1303,6 +1321,36 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.formatOptions.advanced.enableAdvancedCodeBlockProcessing)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.advanced.enableAdvancedCodeBlockProcessing = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('格式化 YAML 前置元数据')
+            .setDesc('启用 YAML 前置元数据的格式化')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatYAMLFrontMatter)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatYAMLFrontMatter = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('格式化数学公式')
+            .setDesc('启用数学公式的格式化')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatMathEquations)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatMathEquations = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('格式化自定义 CSS 类')
+            .setDesc('启用自定义 CSS 类的格式化')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatCustomCSSClasses)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatCustomCSSClasses = value;
                     await this.plugin.saveSettings();
                 }));
     }
