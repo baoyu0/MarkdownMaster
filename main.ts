@@ -26,7 +26,9 @@ interface FormatStructureOptions {
 interface FormatStyleOptions {
     enableBoldRemoval: boolean;
     enableTableFormat: boolean;
-    // ... 其他样式相关选项 ...
+    enableListIndentFormat: boolean;
+    enableLinkFormat: boolean;
+    enableBlockquoteFormat: boolean;
 }
 
 interface FormatAdvancedOptions {
@@ -60,6 +62,9 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
         style: {
             enableBoldRemoval: true,
             enableTableFormat: true,
+            enableListIndentFormat: true,
+            enableLinkFormat: true,
+            enableBlockquoteFormat: true,
         },
         advanced: {
             customRegexRules: [],
@@ -118,7 +123,7 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.showFormatHistory()
         });
 
-        // 修改自动格式化功能事件注册
+        // 修改自动格式化功能件注册
         if (this.settings.formatOptions.advanced.enableAutoFormat) {
             this.fileOpenRef = this.registerEvent(
                 this.app.workspace.on('file-open', (file: TFile) => {
@@ -281,7 +286,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
 
         if (formatOptions.style.enableBoldRemoval) {
-            formatted = formatted.replace(/\*\*/g, '');
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '$1');
         }
 
         formatted = formatted.replace(/^(#+)([^\s#])/gm, '$1 $2');
@@ -296,6 +301,18 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         if (formatOptions.style.enableTableFormat) {
             formatted = this.formatTables(formatted);
+        }
+
+        if (formatOptions.style.enableListIndentFormat) {
+            formatted = this.formatListIndent(formatted);
+        }
+
+        if (formatOptions.style.enableLinkFormat) {
+            formatted = this.formatLinks(formatted);
+        }
+
+        if (formatOptions.style.enableBlockquoteFormat) {
+            formatted = this.formatBlockquotes(formatted);
         }
 
         if (formatOptions.advanced.enableCodeHighlight) {
@@ -435,6 +452,22 @@ export default class MarkdownMasterPlugin extends Plugin {
         css.id = 'markdown-master-styles';
         css.textContent = cssString;
         document.head.append(css);
+    }
+
+    // 新增的辅助方法
+    private formatListIndent(content: string): string {
+        // 实现列表缩进格式化逻辑
+        return content.replace(/^(\s*[-*+])\s+/gm, '$1 ');
+    }
+
+    private formatLinks(content: string): string {
+        // 实现链接格式化逻辑
+        return content.replace(/\[(.*?)\]\((.*?)\)/g, '[$1]($2)');
+    }
+
+    private formatBlockquotes(content: string): string {
+        // 实现引用块格式化逻辑
+        return content.replace(/^>\s*/gm, '> ');
     }
 }
 
@@ -666,7 +699,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         console.log("开始添加内容格式化设置");
         const titleEl = containerEl.createEl('h3', { text: '正则表达式替换 ' });
         
-        // 添加一个链接到正则表达式说明文档
+        // 添加一个链接到正则表式说明文档
         const regexHelpLink = titleEl.createEl('a', {
             text: '📘',
             href: '#',
@@ -695,7 +728,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         if (this.plugin.settings.formatOptions.content.enableRegexReplacement) {
-            console.log("正则表达式替换已启用");
+            console.log("正则表达替换已启用");
             const regexReplacementContainer = containerEl.createEl('div', { cls: 'markdown-master-nested-settings' });
             regexReplacementContainer.style.marginLeft = '20px';
 
@@ -722,7 +755,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
     }
 
-    // 添加一个新方法来显示正则表达式帮助模态框
+    // 添加一个新方来显示正则表达式帮助模态框
     private showRegexHelpModal() {
         const modal = new RegexHelpModal(this.app);
         modal.open();
@@ -801,7 +834,57 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
     }
 
     addStyleFormatSettings(containerEl: ObsidianHTMLElement) {
-        // 实现样式格式化设置
+        containerEl.createEl('h3', { text: '样式格式化选项' });
+
+        new Setting(containerEl)
+            .setName('启用粗体移除')
+            .setDesc('移除所有粗体标记')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.style.enableBoldRemoval)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.style.enableBoldRemoval = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用表格格式化')
+            .setDesc('格式化表格，使其对齐')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.style.enableTableFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.style.enableTableFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用列表缩进格式化')
+            .setDesc('统一列表的缩进')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.style.enableListIndentFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.style.enableListIndentFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用链接格式化')
+            .setDesc('统一链接的格式')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.style.enableLinkFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.style.enableLinkFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用引用块格式化')
+            .setDesc('统一引用块的格式')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.style.enableBlockquoteFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.style.enableBlockquoteFormat = value;
+                    await this.plugin.saveSettings();
+                }));
     }
 
     addAdvancedFormatSettings(containerEl: ObsidianHTMLElement) {
