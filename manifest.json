@@ -1,14 +1,13 @@
 {
   "id": "markdown-master",
   "name": "Markdown Master",
-  "version": "1.0.0",
+  "version": "1.8.7",
   "minAppVersion": "0.15.0",
   "description": "A powerful Markdown formatting plugin for Obsidian.",
   "author": "Your Name",
   "authorUrl": "https://github.com/yourusername",
   "isDesktopOnly": false,
   "js": [
-    "main.js",
-    "format-worker.js"
+    "main.js"
   ]
 }

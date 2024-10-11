@@ -6,7 +6,7 @@ const path = require('path');
 const newVersion = process.argv[2];
 
 if (!newVersion) {
-    console.error('请提供新的版本号，例如: npm run release 1.7.3');
+    console.error('请提供新的版本号，例如: npm run release 1.8.7');
     process.exit(1);
 }
 
@@ -17,8 +17,16 @@ if (!/^\d+\.\d+\.\d+$/.test(newVersion)) {
 }
 
 try {
-    // 更新 package.json 中的版本号
-    execSync(`npm version ${newVersion} --no-git-tag-version`, { stdio: 'inherit' });
+    // 读取当前的 package.json
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const currentVersion = packageJson.version;
+
+    if (currentVersion !== newVersion) {
+        // 更新 package.json 中的版本号
+        execSync(`npm version ${newVersion} --no-git-tag-version`, { stdio: 'inherit' });
+    } else {
+        console.log(`版本号已经是 ${newVersion}，跳过更新 package.json`);
+    }
 
     // 更新 manifest.json 中的版本号
     const manifestPath = path.join(__dirname, 'manifest.json');
@@ -39,9 +47,7 @@ try {
     // 复制必要文件到发布目录
     fs.copyFileSync('main.js', path.join(releaseDir, 'main.js'));
     fs.copyFileSync('manifest.json', path.join(releaseDir, 'manifest.json'));
-    if (fs.existsSync('styles.css')) {
-        fs.copyFileSync('styles.css', path.join(releaseDir, 'styles.css'));
-    }
+    fs.copyFileSync('styles.css', path.join(releaseDir, 'styles.css'));
 
     // Git 操作
     execSync('git add .', { stdio: 'inherit' });

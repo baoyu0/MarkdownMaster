@@ -1,10 +1,13 @@
 {
   "id": "markdown-master",
   "name": "Markdown Master",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "minAppVersion": "0.15.0",
-  "description": "一键格式化Markdown文件，提供预览、撤销、批量处理、自定义规则等功能",
-  "author": "dandan",
-  "authorUrl": "https://github.com/baoyu0",
-  "isDesktopOnly": false
+  "description": "A powerful Markdown formatting plugin for Obsidian.",
+  "author": "Your Name",
+  "authorUrl": "https://github.com/yourusername",
+  "isDesktopOnly": false,
+  "js": [
+    "main.js"
+  ]
 }

@@ -11,11 +11,11 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
-const context = await esbuild.context({
+const buildOptions = {
     banner: {
         js: banner,
     },
-    entryPoints: ["main.ts", "format-worker.ts"],
+    entryPoints: ["main.ts"],
     bundle: true,
     external: [
         "obsidian",
@@ -37,7 +37,7 @@ const context = await esbuild.context({
     logLevel: "info",
     sourcemap: prod ? false : "inline",
     treeShaking: true,
-    outdir: ".",
+    outfile: "main.js",
     plugins: [
         {
             name: 'obsidian-plugin',
@@ -48,11 +48,18 @@ const context = await esbuild.context({
             },
         },
     ],
-});
+};
 
 if (prod) {
-    await context.rebuild();
-    process.exit(0);
+    esbuild.build(buildOptions).catch(() => process.exit(1));
 } else {
-    await context.watch();
+    esbuild.build({
+        ...buildOptions,
+        watch: {
+            onRebuild(error, result) {
+                if (error) console.error('watch build failed:', error)
+                else console.log('watch build succeeded:', result)
+            },
+        },
+    }).catch(() => process.exit(1));
 }

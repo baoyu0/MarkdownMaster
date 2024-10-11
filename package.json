@@ -1,6 +1,6 @@
 {
   "name": "markdown-master",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "description": "Markdown Master 是一个为 Obsidian 设计的插件，旨在提供一键式 Markdown 文件格式化功能。",
   "main": "main.js",
   "scripts": {
@@ -27,7 +27,7 @@
   "devDependencies": {
     "@types/diff": "^5.2.3",
     "builtin-modules": "^3.2.0",
-    "esbuild": "^0.14.47",
+    "esbuild": "^0.24.0",
     "obsidian": "latest",
     "typescript": "4.7.4"
   }

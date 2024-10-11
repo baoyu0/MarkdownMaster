@@ -371,7 +371,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                     // 在这里实现格式化逻辑
                     let formatted = content;
                     // 应用各种格式化规则...
-                    // 注意：这里的格式化逻辑应该与 formatMarkdownDirectly 方法中的逻辑相同
+                    // 注意：这里应该包含与 formatMarkdownDirectly 方法相同的逻辑
                     self.postMessage(formatted);
                 };
             `;
