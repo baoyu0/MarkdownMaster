@@ -1,5 +1,12 @@
 import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, HTMLElement as ObsidianHTMLElement } from 'obsidian';
 import { diffChars, Change } from 'diff';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-markup';
+// 根据需要添加更多语言
 
 interface MarkdownMasterSettings {
     formatOptions: {
@@ -39,6 +46,7 @@ interface FormatAdvancedOptions {
     enableYamlMetadataFormat: boolean;
     enableMathFormat: boolean;
     enableCustomCssClassFormat: boolean;
+    enableAdvancedCodeBlockProcessing: boolean;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -76,6 +84,7 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
             enableYamlMetadataFormat: false,
             enableMathFormat: false,
             enableCustomCssClassFormat: false,
+            enableAdvancedCodeBlockProcessing: true,
         },
     },
 };
@@ -266,6 +275,12 @@ export default class MarkdownMasterPlugin extends Plugin {
                 margin-left: 10px;
             }
         `);
+
+        // 加载 Prism.js 的 CSS
+        const prismCss = document.createElement('link');
+        prismCss.rel = 'stylesheet';
+        prismCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.min.css';
+        document.head.appendChild(prismCss);
     }
 
     onunload() {
@@ -388,6 +403,10 @@ export default class MarkdownMasterPlugin extends Plugin {
             formatted = this.formatCustomCssClasses(formatted);
         }
 
+        if (formatOptions.advanced.enableAdvancedCodeBlockProcessing) {
+            formatted = this.highlightCodeBlocks(formatted);
+        }
+
         this.showNotice(`格式化完成，共进行了 ${replacementCount} 次替换`);
         return formatted.trim();
     }
@@ -468,11 +487,33 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     // 新增的代码块高亮函数
-    highlightCodeBlocks(content: string): string {
+    private highlightCodeBlocks(content: string): string {
         const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
         return content.replace(codeBlockRegex, (match, lang, code) => {
-            return `\`\`\`${lang || ''}\n${code.trim()}\n\`\`\``;
+            let highlightedCode = code;
+            let language = lang || 'plaintext';
+
+            // 优化缩进
+            highlightedCode = this.optimizeIndentation(highlightedCode);
+
+            // 应用语法高亮
+            if (Prism.languages[language]) {
+                highlightedCode = Prism.highlight(highlightedCode, Prism.languages[language], language);
+            }
+
+            return `<pre><code class="language-${language}">${highlightedCode}</code></pre>`;
         });
+    }
+
+    private optimizeIndentation(code: string): string {
+        const lines = code.split('\n');
+        const minIndent = lines.reduce((min, line) => {
+            const match = line.match(/^\s*/);
+            const indent = match ? match[0].length : 0;
+            return line.trim().length > 0 ? Math.min(min, indent) : min;
+        }, Infinity);
+
+        return lines.map(line => line.slice(minIndent)).join('\n');
     }
 
     // 新增的图片链接优化函数
@@ -894,7 +935,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 console.log("regexReplacements 数组不存在");
             }
         } else {
-            console.log("正则表达式替换未启用");
+            console.log("则表达式替未启用");
         }
     }
 
@@ -1115,6 +1156,16 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.formatOptions.advanced.enableCustomCssClassFormat)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.advanced.enableCustomCssClassFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用高级代码块处理')
+            .setDesc('支持更多语言的语法高亮和代码缩进优化')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.advanced.enableAdvancedCodeBlockProcessing)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.advanced.enableAdvancedCodeBlockProcessing = value;
                     await this.plugin.saveSettings();
                 }));
     }
