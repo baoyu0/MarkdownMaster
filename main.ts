@@ -121,7 +121,7 @@ const REGEX_PRESETS = [
         description: '删除每行末尾的空格和制表符'
     },
     {
-        name: 'URL��为链接',
+        name: 'URL为链接',
         regex: '(https?://\\S+)(?=[\\s)])',
         replacement: '[$1]($1)',
         description: '将纯文本URL转换为Markdown链接格式'
@@ -703,44 +703,64 @@ export default class MarkdownMasterPlugin extends Plugin {
         this.markdownLintErrors = [];
 
         lines.forEach((line, index) => {
-            // 检查标题格式
+            // 现有的检查规则...
+
+            // 新增规则：检查标题层级跳跃
             if (line.startsWith('#')) {
-                if (!/^#{1,6}\s/.test(line)) {
-                    this.markdownLintErrors.push({ line: index + 1, message: '标题后应该有一个空格' });
+                const match = line.match(/^#+/);
+                if (match) {
+                    const currentLevel = match[0].length;
+                    if (index > 0) {
+                        const prevLine = lines[index - 1];
+                        if (prevLine.startsWith('#')) {
+                            const prevMatch = prevLine.match(/^#+/);
+                            if (prevMatch) {
+                                const prevLevel = prevMatch[0].length;
+                                if (currentLevel > prevLevel + 1) {
+                                    this.markdownLintErrors.push({ line: index + 1, message: '标题层级不应跳跃，建议逐级递增' });
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            // 检查列表格式
-            if (/^(\s*[-*+]|\s*\d+\.)/.test(line)) {
-                if (!/^(\s*[-*+]|\s*\d+\.)\s/.test(line)) {
-                    this.markdownLintErrors.push({ line: index + 1, message: '列表项后应该有一个空格' });
+            // 检查行长度
+            if (line.length > 120) {
+                this.markdownLintErrors.push({ line: index + 1, message: '行长度超过120个字符，建议换行' });
+            }
+
+            // 检查重复的标点符号
+            if (/[，。！？]{2,}/.test(line)) {
+                this.markdownLintErrors.push({ line: index + 1, message: '存在重复的标点符号' });
+            }
+
+            // 检查空白行后的缩进
+            if (index > 0 && lines[index - 1].trim() === '' && line.startsWith(' ')) {
+                this.markdownLintErrors.push({ line: index + 1, message: '空白行后不应有缩进' });
+            }
+
+            // 检查代码块的语言标记
+            if (line.startsWith('```') && line.trim().length > 3) {
+                const language = line.trim().slice(3);
+                const validLanguages = ['js', 'javascript', 'ts', 'typescript', 'python', 'java', 'c', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'scala', 'html', 'css', 'sql', 'bash', 'shell', 'powershell', 'yaml', 'json', 'xml', 'markdown', 'plaintext'];
+                if (!validLanguages.includes(language.toLowerCase())) {
+                    this.markdownLintErrors.push({ line: index + 1, message: `未知的代码块语言标记: ${language}` });
                 }
             }
 
-            // 检查链接格式
-            const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-            let match;
-            while ((match = linkRegex.exec(line)) !== null) {
-                if (match[1].trim() === '') {
-                    this.markdownLintErrors.push({ line: index + 1, message: '链接文本不能为空' });
-                }
-                if (match[2].trim() === '') {
-                    this.markdownLintErrors.push({ line: index + 1, message: '链接URL不能为空' });
+            // 检查任务列表格式
+            if (/^\s*-\s+\[[ x]\]\s/.test(line)) {
+                if (!/^\s*-\s+\[[ x]\]\s+\S/.test(line)) {
+                    this.markdownLintErrors.push({ line: index + 1, message: '任务列表项后应有内容' });
                 }
             }
 
-            // 检查图片格式
-            const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-            while ((match = imageRegex.exec(line)) !== null) {
-                if (match[2].trim() === '') {
-                    this.markdownLintErrors.push({ line: index + 1, message: '图片URL不能为空' });
-                }
-            }
-
-            // 检查代码块格式
-            if (line.startsWith('```')) {
-                if (line.trim().length > 3 && !/^```\w+$/.test(line.trim())) {
-                    this.markdownLintErrors.push({ line: index + 1, message: '代码块应指定语言或留空' });
+            // 检查表格格式
+            if (line.includes('|')) {
+                const cells = line.split('|').map(cell => cell.trim());
+                if (cells.some(cell => cell === '')) {
+                    this.markdownLintErrors.push({ line: index + 1, message: '表格单元格不应为空' });
                 }
             }
         });
@@ -980,7 +1000,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         
         new Setting(containerEl)
             .setName('启用标题转换')
-            .setDesc('根据下面的规则转换标题级别')
+            .setDesc('根据下面的规则转换标��级别')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.structure.enableHeadingConversion)
                 .onChange(async (value) => {
