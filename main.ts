@@ -80,6 +80,39 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     },
 };
 
+const REGEX_PRESETS = [
+    {
+        name: '删除多余空行',
+        regex: '\n{3,}',
+        replacement: '\n\n',
+        description: '将连续的3个或更多空行替换为2个空行'
+    },
+    {
+        name: '格式化标题空格',
+        regex: '^(#+)([^\s#])',
+        replacement: '$1 $2',
+        description: '确保标题符号(#)后有一个空格'
+    },
+    {
+        name: '格式化列表项空格',
+        regex: '^(\\s*[-*+])([^\s])',
+        replacement: '$1 $2',
+        description: '确保列表项符号后有一个空格'
+    },
+    {
+        name: '删除行尾空格',
+        regex: '[ \t]+$',
+        replacement: '',
+        description: '删除每行末尾的空格和制表符'
+    },
+    {
+        name: 'URL转为链接',
+        regex: '(https?://\\S+)(?=[\\s)])',
+        replacement: '[$1]($1)',
+        description: '将纯文本URL转换为Markdown链接格式'
+    }
+];
+
 export default class MarkdownMasterPlugin extends Plugin {
     settings!: MarkdownMasterSettings;
     private lastContent: string = "";
@@ -124,7 +157,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         this.addCommand({
             id: 'show-format-history',
-            name: '显示格式化历史记录',
+            name: '示格式化历史记录',
             callback: () => this.showFormatHistory()
         });
 
@@ -221,7 +254,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     onunload() {
-        // 不需要手动取消事件监听，Plugin 类会自动处理
+        // 不手动取消件监Plugin 类会自动处
     }
 
     async loadSettings() {
@@ -499,7 +532,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     private formatMathEquations(content: string): string {
         // 实现数学公式格式化逻辑
-        // 这里只是一个简单的示例,实际实现可能需要更复杂的逻辑
+        // 这里只是一个简单的示例,实际实可能需要更复杂的逻辑
         return content.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
             const formattedMath = math.trim().replace(/\s+/g, ' ');
             return `$$\n${formattedMath}\n$$`;
@@ -868,12 +901,35 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         new Setting(ruleContainer)
             .setName('说明')
             .addTextArea(text => text
-                .setPlaceholder('输入说明')
+                .setPlaceholder('输说明')
                 .setValue(regexObj.description)
                 .onChange(async (value) => {
                     this.plugin.settings.formatOptions.content.regexReplacements[index].description = value;
                     await this.plugin.saveSettings();
                 }));
+
+        new Setting(ruleContainer)
+            .setName('预设模板')
+            // @ts-ignore
+            .addDropdown((dropdown) => {
+                dropdown
+                    .addOption('custom', '自定义')
+                    .addOptions(REGEX_PRESETS.reduce((acc, preset, i) => {
+                        acc[i.toString()] = preset.name;
+                        return acc;
+                    }, {} as Record<string, string>))
+                    .setValue('custom')
+                    .onChange((value: string) => {
+                        if (value !== 'custom') {
+                            const preset = REGEX_PRESETS[parseInt(value)];
+                            regexObj.regex = preset.regex;
+                            regexObj.replacement = preset.replacement;
+                            regexObj.description = preset.description;
+                            this.plugin.saveSettings();
+                            this.display(); // 重新渲染设置页面
+                        }
+                    });
+            });
 
         const buttonContainer = ruleContainer.createEl('div', { cls: 'markdown-master-regex-buttons' });
 
@@ -1065,6 +1121,7 @@ class RegexTestModal extends Modal {
     private regexObj: { regex: string; replacement: string; description: string; enabled: boolean };
     private inputEl!: HTMLTextAreaElement;
     private outputEl!: HTMLDivElement;
+    private explanationEl!: HTMLDivElement;
 
     constructor(app: App, regexObj: { regex: string; replacement: string; description: string; enabled: boolean }) {
         super(app);
@@ -1079,15 +1136,14 @@ class RegexTestModal extends Modal {
         new Setting(contentEl)
             .setName('测试文本')
             .setDesc('输入要测试的文本')
-            .addTextArea(text => {
-                // 使用 Obsidian 的 TextAreaComponent 类型
+            .addTextArea((text) => {
                 this.inputEl = (text as any).inputEl;
                 text.setPlaceholder('在此输入测试文本');
                 text.onChange(this.updateResult.bind(this));
             });
 
-        // 使用类型断言和 unknown 中间类型
         this.outputEl = contentEl.createEl('div', { cls: 'regex-test-output' }) as unknown as HTMLDivElement;
+        this.explanationEl = contentEl.createEl('div', { cls: 'regex-test-explanation' }) as unknown as HTMLDivElement;
 
         new Setting(contentEl)
             .addButton(button => button
@@ -1099,24 +1155,50 @@ class RegexTestModal extends Modal {
         const inputText = this.inputEl.value;
         try {
             const regex = new RegExp(this.regexObj.regex, 'gm');
+            const matches = inputText.match(regex) || [];
             const result = inputText.replace(regex, this.regexObj.replacement);
+
             this.outputEl.innerHTML = `
                 <h3>替换结果：</h3>
                 <pre>${result}</pre>
+                <h3>匹配详情：</h3>
+                <ul>
+                    ${matches.map((match, i) => `
+                        <li>
+                            匹配 ${i + 1}：
+                            <pre>${JSON.stringify(match, null, 2)}</pre>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+
+            this.explanationEl.innerHTML = `
+                <h3>正则表达式解释：</h3>
+                <p>${this.explainRegex(this.regexObj.regex)}</p>
             `;
         } catch (error: unknown) {
-            if (error instanceof Error) {
-                this.outputEl.innerHTML = `
-                    <h3>错误：</h3>
-                    <pre>${error.message}</pre>
-                `;
-            } else {
-                this.outputEl.innerHTML = `
-                    <h3>错误：</h3>
-                    <pre>发生未知错误</pre>
-                `;
-            }
+            this.outputEl.innerHTML = `
+                <h3>错误：</h3>
+                <pre>${error instanceof Error ? error.message : String(error)}</pre>
+            `;
+            this.explanationEl.innerHTML = '';
         }
+    }
+
+    explainRegex(regex: string): string {
+        // 这里可以添加更详细的正则表达式解释逻辑
+        // 以下只是一个简单的示例
+        return regex.split('').map(char => {
+            switch(char) {
+                case '^': return '匹配行的开始';
+                case '$': return '匹配行的结束';
+                case '.': return '匹配任意字符';
+                case '*': return '匹配前面的表达式0次或多次';
+                case '+': return '匹配前面的表达式1次或多次';
+                case '?': return '匹配前面的表达式0次或1次';
+                default: return `匹配字符 "${char}"`;
+            }
+        }).join('<br>');
     }
 
     onClose() {
