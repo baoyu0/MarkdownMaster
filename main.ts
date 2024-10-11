@@ -493,6 +493,9 @@ export default class MarkdownMasterPlugin extends Plugin {
         // YAML 前置元数据格式化
         formatted = this.formatYAMLFrontMatter(formatted);
         
+        // 数学公式格式化
+        formatted = this.formatMathEquations(formatted);
+        
         // 应用其他格式化规则...
         
         // 图片优化
@@ -679,23 +682,45 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private formatMathEquations(content: string): string {
+        if (!this.settings.formatMathEquations) {
+            return content;
+        }
+
         const inlineMathRegex = /\$(.+?)\$/g;
         const blockMathRegex = /\$\$([\s\S]+?)\$\$/g;
 
         // 格式化行内数学公式
         content = content.replace(inlineMathRegex, (match, equation) => {
-            return `$${equation.trim()}$`;
+            return `$${this.formatEquation(equation)}$`;
         });
 
         // 格式化块级数学公式
         content = content.replace(blockMathRegex, (match, equation) => {
             const formattedEquation = equation.split('\n')
-                .map((line: string) => line.trim())  // 添加类型注
+                .map((line: string) => this.formatEquation(line.trim()))
                 .join('\n');
             return `$$\n${formattedEquation}\n$$`;
         });
 
         return content;
+    }
+
+    private formatEquation(equation: string): string {
+        // 移除多余的空格
+        equation = equation.replace(/\s+/g, ' ').trim();
+
+        // 在运算符周围添加空格
+        equation = equation.replace(/([+\-*\/=<>])/g, ' $1 ');
+
+        // 移除括号内部的空格
+        equation = equation.replace(/\(\s*(.+?)\s*\)/g, '($1)');
+
+        // 修复分数格式
+        equation = equation.replace(/\\frac\s*{(.+?)}\s*{(.+?)}/g, '\\frac{$1}{$2}');
+
+        // 其他特定的LaTeX格式化规则可以在这里添加
+
+        return equation.trim();
     }
 
     private formatCustomCssClasses(content: string): string {
@@ -1362,7 +1387,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用列表缩进格式化')
+            .setName('启列表缩进格式化')
             .setDesc('统一列表的缩进')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.style.enableListIndentFormat)
@@ -1479,7 +1504,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('格式化数学公式')
-            .setDesc('启用数学公式的格式')
+            .setDesc('启用 LaTeX 数学公式的格式化')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatMathEquations)
                 .onChange(async (value) => {
