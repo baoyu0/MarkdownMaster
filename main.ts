@@ -488,10 +488,15 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private async formatMarkdownDirectly(content: string): Promise<string> {
-        // 在这里实现实际的格式化逻辑，而不是调用 getCachedOrFormat
-        // 例：
         let formatted = content;
+        
         // 应用各种格式化规则...
+        
+        // 图片优化
+        formatted = this.optimizeImages(formatted);
+        
+        // 其他格式化规则...
+        
         return formatted;
     }
 
@@ -888,6 +893,38 @@ export default class MarkdownMasterPlugin extends Plugin {
         marker.setAttribute('aria-label', message);
         marker.setAttribute('title', message);
         return marker;
+    }
+
+    private optimizeImages(content: string): string {
+        if (!this.settings.formatOptions.advanced.enableImageOptimization) {
+            return content;
+        }
+
+        const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+        return content.replace(imageRegex, (match, alt, src) => {
+            // 转换为相对路径（如果是本地图片）
+            if (src.startsWith('http://') || src.startsWith('https://')) {
+                // 对于网络图片，我们可以考虑使用 HTTPS
+                src = src.replace(/^http:/, 'https:');
+            } else {
+                // 对于本地图片，我们可以尝试使用相对路径
+                src = this.getRelativePath(src);
+            }
+
+            // 添加图片尺寸属性（如果没有的话）
+            if (!src.includes('|')) {
+                src += '|500x';  // 默认最大宽度为500像素
+            }
+
+            // 添加懒加载属性
+            return `![${alt}](${src}){loading=lazy}`;
+        });
+    }
+
+    private getRelativePath(path: string): string {
+        // 这个方法需要根据 Obsidian 的文件结构来实现
+        // 这里只是一个示例
+        return path.replace(/^\//, './');
     }
 }
 
@@ -1356,8 +1393,8 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用图片链接优化')
-            .setDesc('优化图片链接，如将http转换为https')
+            .setName('启用图片优化')
+            .setDesc('优化图片链接，添加懒加载和尺寸属性')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableImageOptimization)
                 .onChange(async (value) => {
