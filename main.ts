@@ -121,7 +121,7 @@ const REGEX_PRESETS = [
         description: '删除每行末尾的空格和制表符'
     },
     {
-        name: 'URL链接',
+        name: 'URL链',
         regex: '(https?://\\S+)(?=[\\s)])',
         replacement: '[$1]($1)',
         description: '将纯文本URL转换为Markdown链接格式'
@@ -496,7 +496,8 @@ export default class MarkdownMasterPlugin extends Plugin {
         // 数学公式格式化
         formatted = this.formatMathEquations(formatted);
         
-        // 应用其他格式化规则...
+        // 自定义 CSS 类格式化
+        formatted = this.formatCustomCSSClasses(formatted);
         
         // 图片优化
         formatted = this.optimizeImages(formatted);
@@ -613,7 +614,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     // 新增的图链接化函数
     optimizeImageLinks(content: string): string {
-        const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
+        const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
         return content.replace(imageRegex, (match, alt, url) => {
             const optimizedUrl = url.replace(/^http:/, 'https:');
             return `![${alt}](${optimizedUrl})`;
@@ -723,14 +724,19 @@ export default class MarkdownMasterPlugin extends Plugin {
         return equation.trim();
     }
 
-    private formatCustomCssClasses(content: string): string {
-        const cssClassRegex = /\{\.([^}]+)\}/g;
+    private formatCustomCSSClasses(content: string): string {
+        if (!this.settings.formatCustomCSSClasses) {
+            return content;
+        }
+
+        const cssClassRegex = /\{([^}]+)\}/g;
         return content.replace(cssClassRegex, (match, classes) => {
-            const formattedClasses = classes.split('.')
-                .filter((cls: string) => cls.trim() !== '')  // 添加类型注解
-                .map((cls: string) => cls.trim())  // 添加类型注解
-                .join('.');
-            return `{.${formattedClasses}}`;
+            const formattedClasses = classes
+                .split(' ')
+                .map((cls: string) => cls.trim())
+                .filter((cls: string) => cls !== '')
+                .join(' ');
+            return `{${formattedClasses}}`;
         });
     }
 
@@ -834,7 +840,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                 this.markdownLintErrors.push({ line: index + 1, message: '空白行后不应有缩进' });
             }
 
-            // 检查代码块的语言标记
+            // ���查代码块的语言标记
             if (line.startsWith('```') && line.trim().length > 3) {
                 const language = line.trim().slice(3);
                 const validLanguages = ['js', 'javascript', 'ts', 'typescript', 'python', 'java', 'c', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'scala', 'html', 'css', 'sql', 'bash', 'shell', 'powershell', 'yaml', 'json', 'xml', 'markdown', 'plaintext'];
@@ -930,7 +936,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
         return content.replace(imageRegex, (match, alt, src) => {
-            // 转换为相对路径（如果是本地图片）
+            // 转换为相对路径（如果是本�����片）
             if (src.startsWith('http://') || src.startsWith('https://')) {
                 // 对于网络图片，我们可以考虑使用 HTTPS
                 src = src.replace(/^http:/, 'https:');
@@ -1463,7 +1469,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用数学公式格化')
+            .setName('用数学公式格式化')
             .setDesc('格式化LaTeX数学公式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableMathFormat)
@@ -1513,7 +1519,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('式化自定义 CSS 类')
+            .setName('格式化自定义 CSS 类')
             .setDesc('启用自定义 CSS 类的格式化')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatCustomCSSClasses)
