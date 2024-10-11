@@ -364,16 +364,21 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     // 初始化 Web Worker
     private initWorker() {
-        const workerCode = `
-            self.onmessage = async (event) => {
-                const { content, settings } = event.data;
-                // 这里应该包含实际的格式化逻辑
-                const formattedContent = content.toUpperCase(); // 示例：将内容转为大写
-                self.postMessage(formattedContent);
-            };
-        `;
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        this.worker = new Worker(URL.createObjectURL(blob));
+        if (typeof Worker !== 'undefined') {
+            const workerCode = `
+                self.onmessage = async (event) => {
+                    const { content, settings } = event.data;
+                    // 在这里实现格式化逻辑
+                    let formatted = content;
+                    // 应用各种格式化规则...
+                    // 注意：这里的格式化逻辑应该与 formatMarkdownDirectly 方法中的逻辑相同
+                    self.postMessage(formatted);
+                };
+            `;
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            this.worker = new Worker(workerUrl);
+        }
     }
 
     // 使用 Web Worker 进行格式化
@@ -383,10 +388,11 @@ export default class MarkdownMasterPlugin extends Plugin {
                 reject(new Error('Web Worker not initialized'));
                 return;
             }
-            this.worker.onmessage = (event) => {
+            const messageHandler = (event: MessageEvent) => {
+                this.worker!.removeEventListener('message', messageHandler);
                 resolve(event.data);
             };
-            this.worker.onerror = reject;
+            this.worker.addEventListener('message', messageHandler);
             this.worker.postMessage({ content, settings: this.settings });
         });
     }
@@ -412,7 +418,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         await this.app.vault.modify(file, formattedContent);
     }
 
-    // 批格式化（使用分块处理）
+    // 批格化（使用分块处理）
     async batchFormatChunked() {
         const files = this.app.vault.getMarkdownFiles();
         const totalFiles = files.length;
@@ -458,7 +464,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     // 异步处理格式化
     async formatMarkdown(content: string): Promise<string> {
-        if (content.length > 10000) {
+        if (content.length > 10000 && this.worker) {
             return this.formatWithWebWorker(content);
         } else {
             return this.formatMarkdownDirectly(content);
@@ -467,7 +473,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     private async formatMarkdownDirectly(content: string): Promise<string> {
         // 在这里实现实际的格式化逻辑，而不是调用 getCachedOrFormat
-        // 例如：
+        // 例：
         let formatted = content;
         // 应用各种格式化规则...
         return formatted;
@@ -594,11 +600,11 @@ export default class MarkdownMasterPlugin extends Plugin {
         const formattedContent = await this.formatMarkdown(content);
         if (content !== formattedContent) {
             await this.app.vault.modify(file, formattedContent);
-            new Notice(`已自动格式化文件: ${file.name}`);
+            new Notice(`已自动格文件: ${file.name}`);
         }
     }
 
-    // 新的文本计函数
+    // 新文本计函数
     showTextStatistics() {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (!activeView) {
@@ -629,7 +635,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private formatLinks(content: string): string {
-        // 实现链接格式化逻辑
+        // 实链接格式化逻辑
         return content.replace(/\[(.*?)\]\((.*?)\)/g, '[$1]($2)');
     }
 
@@ -660,7 +666,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         // 格式化块级数学公式
         content = content.replace(blockMathRegex, (match, equation) => {
             const formattedEquation = equation.split('\n')
-                .map((line: string) => line.trim())  // 添加类型注解
+                .map((line: string) => line.trim())  // 添加类型注
                 .join('\n');
             return `$$\n${formattedEquation}\n$$`;
         });
@@ -1385,7 +1391,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('格式化 YAML 前置元数据')
-            .setDesc('启用 YAML 前置元数据的格式化')
+            .setDesc('启用 YAML 置元数据的格式化')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatYAMLFrontMatter)
                 .onChange(async (value) => {
@@ -1395,7 +1401,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('格式化数学公式')
-            .setDesc('启用数学公式的格式化')
+            .setDesc('启用数学公式的格式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatMathEquations)
                 .onChange(async (value) => {
@@ -1404,7 +1410,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('格式化自定义 CSS 类')
+            .setName('式化自定义 CSS 类')
             .setDesc('启用自定义 CSS 类的格式化')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatCustomCSSClasses)
