@@ -128,6 +128,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     private formatHistory!: FormatHistory;
     private fileOpenRef: EventRef;
     private originalContent: string = ""; // 新增：存储原始内容
+    private markdownLintErrors: Array<{ line: number; message: string }> = [];
 
     async onload() {
         await this.loadSettings();
@@ -203,6 +204,13 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.previewFormat()
         });
 
+        // 添加新的命令
+        this.addCommand({
+            id: 'check-markdown-syntax',
+            name: '检查Markdown语法',
+            callback: () => this.checkMarkdownSyntax()
+        });
+
         // 添加自定义 CSS
         this.addStyle(`
             .markdown-master-preview-container {
@@ -273,6 +281,16 @@ export default class MarkdownMasterPlugin extends Plugin {
 
             .markdown-master-regex-buttons button {
                 margin-left: 10px;
+            }
+
+            .markdown-lint-gutter-marker {
+                color: orange;
+                font-size: 18px;
+                cursor: pointer;
+            }
+
+            .markdown-lint-underline {
+                text-decoration: wavy underline orange;
             }
         `);
 
@@ -516,7 +534,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         return lines.map(line => line.slice(minIndent)).join('\n');
     }
 
-    // 新增的图片链接优化函数
+    // 新增的图片链接化函数
     optimizeImageLinks(content: string): string {
         const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
         return content.replace(imageRegex, (match, alt, url) => {
@@ -572,13 +590,13 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     private formatBlockquotes(content: string): string {
-        // 实现引用块格式化逻辑
+        // 实引用块格式化逻辑
         return content.replace(/^>\s*/gm, '> ');
     }
 
     private formatYamlMetadata(content: string): string {
         // 实现YAML前置元数据格式化逻辑
-        // 这里只是一个简单的示例,实际实现可能需要更复杂的逻辑
+        // 这里只是一个简单的示例,实际实���可能需要更复杂的逻辑
         const yamlRegex = /^---\n([\s\S]*?)\n---/;
         return content.replace(yamlRegex, (match, yaml) => {
             const formattedYaml = yaml.split('\n').map((line: string) => line.trim()).join('\n');
@@ -652,6 +670,125 @@ export default class MarkdownMasterPlugin extends Plugin {
                 }
             }).open();
         }
+    }
+
+    async checkMarkdownSyntax() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) {
+            new Notice('请打开一个Markdown文件');
+            return;
+        }
+
+        const content = activeView.editor.getValue();
+        const lines = content.split('\n');
+
+        this.markdownLintErrors = [];
+
+        lines.forEach((line, index) => {
+            // 检查标题格式
+            if (line.startsWith('#')) {
+                if (!/^#{1,6}\s/.test(line)) {
+                    this.markdownLintErrors.push({ line: index + 1, message: '标题后应该有一个空格' });
+                }
+            }
+
+            // 检查列表格式
+            if (/^(\s*[-*+]|\s*\d+\.)/.test(line)) {
+                if (!/^(\s*[-*+]|\s*\d+\.)\s/.test(line)) {
+                    this.markdownLintErrors.push({ line: index + 1, message: '列表项后应该有一个空格' });
+                }
+            }
+
+            // 检查链接格式
+            const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+            let match;
+            while ((match = linkRegex.exec(line)) !== null) {
+                if (match[1].trim() === '') {
+                    this.markdownLintErrors.push({ line: index + 1, message: '链接文本不能为空' });
+                }
+                if (match[2].trim() === '') {
+                    this.markdownLintErrors.push({ line: index + 1, message: '链接URL不能为空' });
+                }
+            }
+
+            // 检查图片格式
+            const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+            while ((match = imageRegex.exec(line)) !== null) {
+                if (match[2].trim() === '') {
+                    this.markdownLintErrors.push({ line: index + 1, message: '图片URL不能为空' });
+                }
+            }
+
+            // 检查代码块格式
+            if (line.startsWith('```')) {
+                if (line.trim().length > 3 && !/^```\w+$/.test(line.trim())) {
+                    this.markdownLintErrors.push({ line: index + 1, message: '代码块应指定语言或留空' });
+                }
+            }
+        });
+
+        if (this.markdownLintErrors.length > 0) {
+            this.showLintResults();
+        } else {
+            new Notice('未发现Markdown语法错误');
+        }
+    }
+
+    showLintResults() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) return;
+
+        const editor = activeView.editor;
+
+        // 添加新的标记
+        this.markdownLintErrors.forEach(error => {
+            const lineNumber = error.line - 1;
+            const lineContent = this.getLineContent(editor, lineNumber);
+            
+            if (lineContent !== undefined) {
+                // 添加装订线标记
+                const gutterMarker = this.createGutterMarker(error.message);
+                this.addGutterMarker(editor, lineNumber, "markdown-lint-gutter", gutterMarker);
+
+                // 添加下划线
+                const from = { line: lineNumber, ch: 0 };
+                const to = { line: lineNumber, ch: lineContent.length };
+                this.addUnderline(editor, from, to, 'markdown-lint-underline');
+            }
+        });
+
+        // 显示错误摘要
+        new MarkdownLintModal(this.app, this.markdownLintErrors).open();
+    }
+
+    // 修改 addGutterMarker 方法
+    private addGutterMarker(editor: any, line: number, gutterType: string, element: HTMLElement) {
+        const lineInfo = editor.lineInfo(line);
+        if (lineInfo) {
+            editor.setGutterMarker(line, gutterType, element);
+        }
+    }
+
+    // 修改 addUnderline 方法
+    private addUnderline(editor: any, from: {line: number, ch: number}, to: {line: number, ch: number}, className: string) {
+        editor.markText(from, to, { className: className });
+    }
+
+    // 修改 getLineContent 方法
+    private getLineContent(editor: any, line: number): string | undefined {
+        return editor.getRange(
+            { line: line, ch: 0 },
+            { line: line, ch: Number.MAX_SAFE_INTEGER }
+        );
+    }
+
+    createGutterMarker(message: string): HTMLElement {
+        const marker = document.createElement('div');
+        marker.classList.add('markdown-lint-gutter-marker');
+        marker.innerHTML = '⚠️';
+        marker.setAttribute('aria-label', message);
+        marker.setAttribute('title', message);
+        return marker;
     }
 }
 
@@ -1140,7 +1277,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用数学公式格式化')
+            .setName('启用数学公式格化')
             .setDesc('格式化LaTeX数学公式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableMathFormat)
@@ -1300,6 +1437,35 @@ class RegexTestModal extends Modal {
                 default: return `匹配字符 "${char}"`;
             }
         }).join('<br>');
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+class MarkdownLintModal extends Modal {
+    constructor(app: App, private errors: Array<{ line: number; message: string }>) {
+        super(app);
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl('h2', { text: 'Markdown语法检查结果' });
+
+        const list = contentEl.createEl('ul');
+        this.errors.forEach(error => {
+            const item = list.createEl('li');
+            item.textContent = `第${error.line}行: ${error.message}`;
+        });
+
+        new Setting(contentEl)
+            .addButton(btn => btn
+                .setButtonText('关闭')
+                .onClick(() => this.close())
+            );
     }
 
     onClose() {
