@@ -372,7 +372,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                     // 在这里实现格式化逻辑
                     let formatted = content;
                     // 应用各种格式化规则...
-                    // 注意：这里应该包含与 formatMarkdownDirectly 方法相同的逻辑
+                    // 注意：这里应该包含与 formatMarkdownDirectly 方法相同逻辑
                     self.postMessage(formatted);
                 };
             `;
@@ -490,7 +490,10 @@ export default class MarkdownMasterPlugin extends Plugin {
     private async formatMarkdownDirectly(content: string): Promise<string> {
         let formatted = content;
         
-        // 应用各种格式化规则...
+        // YAML 前置元数据格式化
+        formatted = this.formatYAMLFrontMatter(formatted);
+        
+        // 应用其他格式化规则...
         
         // 图片优化
         formatted = this.optimizeImages(formatted);
@@ -605,7 +608,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         return lines.map(line => line.slice(minIndent)).join('\n');
     }
 
-    // 新增的图片链接化函数
+    // 新增的图链接化函数
     optimizeImageLinks(content: string): string {
         const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
         return content.replace(imageRegex, (match, alt, url) => {
@@ -925,6 +928,28 @@ export default class MarkdownMasterPlugin extends Plugin {
         // 这个方法需要根据 Obsidian 的文件结构来实现
         // 这里只是一个示例
         return path.replace(/^\//, './');
+    }
+
+    private formatYAMLFrontMatter(content: string): string {
+        if (!this.settings.formatYAMLFrontMatter) {
+            return content;
+        }
+
+        const yamlRegex = /^---\n([\s\S]*?)\n---/;
+        return content.replace(yamlRegex, (match, yaml) => {
+            const formattedYaml = yaml
+                .split('\n')
+                .map((line: string) => {
+                    const [key, ...values] = line.split(':');
+                    if (values.length) {
+                        const value = values.join(':').trim();
+                        return `${key.trim()}: ${value}`;
+                    }
+                    return line;
+                })
+                .join('\n');
+            return `---\n${formattedYaml}\n---`;
+        });
     }
 }
 
@@ -1444,7 +1469,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('格式化 YAML 前置元数据')
-            .setDesc('启用 YAML 置元数据的格式化')
+            .setDesc('启用 YAML 前置元数据的格式化')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatYAMLFrontMatter)
                 .onChange(async (value) => {
