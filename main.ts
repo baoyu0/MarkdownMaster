@@ -118,6 +118,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     private lastContent: string = "";
     private formatHistory!: FormatHistory;
     private fileOpenRef: EventRef;
+    private originalContent: string = ""; // 新增：存储原始内容
 
     async onload() {
         await this.loadSettings();
@@ -177,6 +178,20 @@ export default class MarkdownMasterPlugin extends Plugin {
             id: 'show-text-statistics',
             name: '显示文本统计',
             callback: () => this.showTextStatistics()
+        });
+
+        // 添加新的命令：撤销所有更改
+        this.addCommand({
+            id: 'revert-all-changes',
+            name: '撤销所有格式化更改',
+            callback: () => this.revertAllChanges()
+        });
+
+        // 添加新的命令：预览格式化效果
+        this.addCommand({
+            id: 'preview-format',
+            name: '预览格式化效果',
+            callback: () => this.previewFormat()
         });
 
         // 添加自定义 CSS
@@ -560,6 +575,41 @@ export default class MarkdownMasterPlugin extends Plugin {
         } else if (this.fileOpenRef) {
             this.fileOpenRef.unregister();
             this.fileOpenRef = null;
+        }
+    }
+
+    // 新增方法：撤销所有更改
+    async revertAllChanges() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            const editor = activeView.editor;
+            if (this.originalContent) {
+                editor.setValue(this.originalContent);
+                new Notice('已恢复到原始状态');
+            } else {
+                new Notice('没有可恢复的原始内容');
+            }
+        }
+    }
+
+    // 新增方法：预览格式化效果
+    async previewFormat() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            const editor = activeView.editor;
+            const currentContent = editor.getValue();
+            this.originalContent = currentContent; // 保存原始内容
+
+            const formattedContent = this.formatMarkdown(currentContent);
+            
+            new FormatPreviewModal(this.app, currentContent, formattedContent, async (confirmed) => {
+                if (confirmed) {
+                    editor.setValue(formattedContent);
+                    new Notice('已应用格式化');
+                } else {
+                    new Notice('已取消格式化');
+                }
+            }).open();
         }
     }
 }
