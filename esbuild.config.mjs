@@ -47,6 +47,14 @@ const buildOptions = {
                 });
             },
         },
+        {
+            name: 'node-modules-polyfill',
+            setup(build) {
+                build.onResolve({ filter: /^prettier/ }, args => {
+                    return { path: args.path, external: true };
+                });
+            },
+        },
     ],
 };
 

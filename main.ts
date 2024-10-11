@@ -6,6 +6,12 @@ import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-markup';
+import prettier from 'prettier/standalone';
+import parserBabel from 'prettier/parser-babel';
+import parserTypescript from 'prettier/parser-typescript';
+import parserCss from 'prettier/parser-postcss';
+import parserHtml from 'prettier/parser-html';
+import parserMarkdown from 'prettier/parser-markdown';
 // 根据需要添加更多语言
 
 interface MarkdownMasterSettings {
@@ -499,12 +505,97 @@ export default class MarkdownMasterPlugin extends Plugin {
         // 自定义 CSS 类格式化
         formatted = this.formatCustomCSSClasses(formatted);
         
+        // 高级代码块处理
+        if (this.settings.formatOptions.advanced.enableAdvancedCodeBlockProcessing) {
+            formatted = await this.processCodeBlocks(formatted);
+        }
+        
         // 图片优化
         formatted = this.optimizeImages(formatted);
         
         // 其他格式化规则...
         
         return formatted;
+    }
+
+    private async processCodeBlocks(content: string): Promise<string> {
+        const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+        
+        const promises = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = codeBlockRegex.exec(content)) !== null) {
+            const [fullMatch, language, code] = match;
+            const beforeCode = content.slice(lastIndex, match.index);
+            promises.push(Promise.resolve(beforeCode));
+
+            if (!language) {
+                promises.push(Promise.resolve(fullMatch));
+            } else {
+                const formattedCodePromise = this.formatCodeWithPrettier(code, language)
+                    .then(formattedCode => this.highlightCode(formattedCode, language))
+                    .then(highlightedCode => `\`\`\`${language}\n${highlightedCode}\n\`\`\``);
+                promises.push(formattedCodePromise);
+            }
+
+            lastIndex = match.index + fullMatch.length;
+        }
+
+        promises.push(Promise.resolve(content.slice(lastIndex)));
+
+        const results = await Promise.all(promises);
+        return results.join('');
+    }
+
+    private async formatCodeWithPrettier(code: string, language: string): Promise<string> {
+        try {
+            const parser = this.getPrettierParser(language);
+            if (!parser) {
+                return code; // 如果没有对应的解析器，返回原始代码
+            }
+
+            return await prettier.format(code, {
+                parser: parser,
+                plugins: [parserBabel, parserTypescript, parserCss, parserHtml, parserMarkdown],
+                semi: true,
+                singleQuote: true,
+                tabWidth: 4,
+                printWidth: 100,
+            });
+        } catch (error) {
+            console.error('Prettier formatting error:', error);
+            return code; // 如果格式化失败，返回原始代码
+        }
+    }
+
+    private getPrettierParser(language: string): string | undefined {
+        switch (language.toLowerCase()) {
+            case 'javascript':
+            case 'js':
+                return 'babel';
+            case 'typescript':
+            case 'ts':
+                return 'typescript';
+            case 'css':
+                return 'css';
+            case 'html':
+                return 'html';
+            case 'markdown':
+            case 'md':
+                return 'markdown';
+            default:
+                return undefined;
+        }
+    }
+
+    private highlightCode(code: string, language: string): string {
+        // 这里我们使用 Prism.js 进行语法高亮
+        // 注意：你需要确保已经正确引入了 Prism.js 及其样式
+        if (Prism.languages[language]) {
+            return Prism.highlight(code, Prism.languages[language], language);
+        }
+        return code; // 如果没有对应的语言定义，返回原始代码
     }
 
     async showFormatOptions() {
@@ -840,7 +931,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                 this.markdownLintErrors.push({ line: index + 1, message: '空白行后不应有缩进' });
             }
 
-            // ���查代码块的语言标记
+            // 查代码块的语言标记
             if (line.startsWith('```') && line.trim().length > 3) {
                 const language = line.trim().slice(3);
                 const validLanguages = ['js', 'javascript', 'ts', 'typescript', 'python', 'java', 'c', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'scala', 'html', 'css', 'sql', 'bash', 'shell', 'powershell', 'yaml', 'json', 'xml', 'markdown', 'plaintext'];
@@ -936,7 +1027,7 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
         return content.replace(imageRegex, (match, alt, src) => {
-            // 转换为相对路径（如果是本�����片）
+            // 转换为相对路径（如果是本片）
             if (src.startsWith('http://') || src.startsWith('https://')) {
                 // 对于网络图片，我们可以考虑使用 HTTPS
                 src = src.replace(/^http:/, 'https:');
@@ -1469,7 +1560,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('用数学公式格式化')
+            .setName('���学公式格式化')
             .setDesc('格式化LaTeX数学公式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableMathFormat)
@@ -1490,7 +1581,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('启用高级代码块处理')
-            .setDesc('支持更多语言的语法高亮和代码缩进优化')
+            .setDesc('增强代码块的处理，包括语法高亮和格式化')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableAdvancedCodeBlockProcessing)
                 .onChange(async (value) => {
