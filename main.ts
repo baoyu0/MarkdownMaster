@@ -14,12 +14,27 @@ import parserHtml from 'prettier/parser-html';
 import parserMarkdown from 'prettier/parser-markdown';
 // 根据需要添加更多语言
 
+const ruleFunctions: { [key: string]: (content: string) => string } = {
+    headings: (content: string) => {
+        return content.replace(/^(#+)\s*(.*?)$/gm, (match, hashes, title) => {
+            return `${hashes} ${title.trim()}`;
+        });
+    },
+    lists: (content: string) => {
+        return content.replace(/^(\s*[-*+])\s*(.*?)$/gm, (match, bullet, item) => {
+            return `${bullet} ${item.trim()}`;
+        });
+    },
+    // 可以根据需要添加更多函数
+};
+
 interface FormatRule {
     id: string;
     name: string;
     enabled: boolean;
     priority: number;
     apply: (content: string) => string;
+    applyId?: string; // 添加这一行
 }
 
 interface MarkdownMasterSettings {
@@ -114,20 +129,16 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
             name: '标题格式化',
             enabled: true,
             priority: 100,
-            apply: (content: string) => {
-                // 实现标题格式化逻辑
-                return content;
-            }
+            applyId: 'headings',
+            apply: ruleFunctions['headings']
         },
         {
             id: 'lists',
             name: '列表格式化',
             enabled: true,
             priority: 90,
-            apply: (content: string) => {
-                // 实现列表格式化逻辑
-                return content;
-            }
+            applyId: 'lists',
+            apply: ruleFunctions['lists']
         },
         // ... 添加更多格式化规则 ...
     ]
@@ -150,7 +161,7 @@ const REGEX_PRESETS = [
         name: '格式化列表项空格',
         regex: '^(\\s*[-*+])([^\s])',
         replacement: '$1 $2',
-        description: '确保列表项符号有一个空格'
+        description: '确保列表项符号有空格'
     },
     {
         name: '删除行尾空格',
@@ -166,7 +177,12 @@ const REGEX_PRESETS = [
     }
 ];
 
-export default class MarkdownMasterPlugin extends Plugin {
+// 在文件顶部添加这个接口
+interface ExtendedPlugin extends Plugin {
+    addStatusBarItem(): HTMLElement;
+}
+
+export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlugin {
     settings!: MarkdownMasterSettings;
     private lastContent: string = "";
     private formatHistory!: FormatHistory;
@@ -177,202 +193,224 @@ export default class MarkdownMasterPlugin extends Plugin {
     private worker: Worker | null = null;
 
     async onload() {
-        await this.loadSettings();
+        console.log('Loading MarkdownMaster plugin');
+        try {
+            await this.loadSettings();
+            console.log('Settings loaded');
 
-        // 确保 headingConversionRules 被正确初始化
-        if (!this.settings.formatOptions.structure.headingConversionRules) {
-            this.settings.formatOptions.structure.headingConversionRules = {
-                1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0
-            };
-            await this.saveSettings();
+            // 确保所有格式化规则都有有效的 apply 函数
+            this.settings.formatRules = this.settings.formatRules.map(rule => {
+                if (typeof rule.apply !== 'function') {
+                    console.warn(`Rule ${rule.id} does not have a valid apply function. Using default.`);
+                    return {
+                        ...rule,
+                        apply: (content: string) => content // 默认不做任何改变
+                    };
+                }
+                return rule;
+            });
+            console.log('Format rules processed');
+
+            // 确保 headingConversionRules 被正确初始化
+            if (!this.settings.formatOptions.structure.headingConversionRules) {
+                this.settings.formatOptions.structure.headingConversionRules = {
+                    1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0
+                };
+                await this.saveSettings();
+            }
+            console.log('Heading conversion rules initialized');
+
+            this.formatHistory = new FormatHistory();
+            this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
+
+            this.addRibbonIcon("pencil", "Markdown Master", (evt) => {
+                this.showFormatOptions();
+            });
+
+            this.addCommand({
+                id: 'format-markdown',
+                name: '格式化当前Markdown文件',
+                callback: () => this.showFormatOptions()
+            });
+
+            this.addCommand({
+                id: 'undo-format',
+                name: '撤销上次格式化',
+                callback: () => this.undoFormat()
+            });
+
+            this.addCommand({
+                id: 'batch-format-markdown',
+                name: '批量格式化所有Markdown文件',
+                callback: () => this.batchFormat()
+            });
+
+            this.addCommand({
+                id: 'show-format-history',
+                name: '示格式化历史记录',
+                callback: () => this.showFormatHistory()
+            });
+
+            // 修改自动格式化功能件注册
+            if (this.settings.formatOptions.advanced.enableAutoFormat) {
+                this.fileOpenRef = this.registerEvent(
+                    this.app.workspace.on('file-open', (file: TFile) => {
+                        if (file && file.extension === 'md') {
+                            this.autoFormatFile(file);
+                        }
+                    })
+                );
+            }
+
+            // 添加文本统计命令
+            this.addCommand({
+                id: 'show-text-statistics',
+                name: '显示文本统计',
+                callback: () => this.showTextStatistics()
+            });
+
+            // 添加的命令：撤销所有更改
+            this.addCommand({
+                id: 'revert-all-changes',
+                name: '撤销有格更改',
+                callback: () => this.revertAllChanges()
+            });
+
+            // 添加新的命令：预览格式化效果
+            this.addCommand({
+                id: 'preview-format',
+                name: '预览格式化效果',
+                callback: () => this.previewFormat()
+            });
+
+            // 添加新的命令
+            this.addCommand({
+                id: 'check-markdown-syntax',
+                name: '检查Markdown语法',
+                callback: () => this.checkMarkdownSyntax()
+            });
+
+            // 添加自定义 CSS
+            this.addStyle(`
+                .markdown-master-preview-container {
+                    max-height: 60vh;
+                    overflow-y: auto;
+                    border: 1px solid var(--background-modifier-border);
+                    padding: 10px;
+                    margin-bottom: 20px;
+                }
+                .markdown-master-diff-preview pre {
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }
+                .markdown-master-diff-added {
+                    background-color: #e6ffed;
+                    color: #24292e;
+                }
+                .markdown-master-diff-removed {
+                    background-color: #ffeef0;
+                    color: #24292e;
+                    text-decoration: line-through;
+                }
+                .markdown-master-regex-help {
+                    margin-left: 10px;
+                    text-decoration: none;
+                    cursor: pointer;
+                }
+
+                .markdown-master-regex-help:hover {
+                    text-decoration: underline;
+                }
+
+                .regex-test-output {
+                    margin-top: 20px;
+                    padding: 10px;
+                    border: 1px solid var(--background-modifier-border);
+                    border-radius: 5px;
+                }
+
+                .regex-test-output pre {
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }
+
+                .markdown-master-nested-settings {
+                    margin-left: 20px;
+                    border-left: 2px solid var(--background-modifier-border);
+                    padding-left: 20px;
+                }
+
+                .markdown-master-regex-rule {
+                    margin-bottom: 20px;
+                    padding: 10px;
+                    border: 1px solid var(--background-modifier-border);
+                    border-radius: 5px;
+                }
+
+                .markdown-master-regex-rule .setting-item {
+                    border-top: none;
+                    padding-top: 0;
+                }
+
+                .markdown-master-regex-buttons {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-top: 10px;
+                }
+
+                .markdown-master-regex-buttons button {
+                    margin-left: 10px;
+                }
+
+                .markdown-lint-gutter-marker {
+                    color: orange;
+                    font-size: 18px;
+                    cursor: pointer;
+                }
+
+                .markdown-lint-underline {
+                    text-decoration: wavy underline orange;
+                }
+
+                /* 在这里添加 Prism.js 的基本样式 */
+                code[class*="language-"],
+                pre[class*="language-"] {
+                    color: #000;
+                    background: none;
+                    text-shadow: 0 1px white;
+                    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+                    font-size: 1em;
+                    text-align: left;
+                    white-space: pre;
+                    word-spacing: normal;
+                    word-break: normal;
+                    word-wrap: normal;
+                    line-height: 1.5;
+                    -moz-tab-size: 4;
+                    -o-tab-size: 4;
+                    tab-size: 4;
+                    -webkit-hyphens: none;
+                    -moz-hyphens: none;
+                    -ms-hyphens: none;
+                    hyphens: none;
+                }
+                /* 添加多必要的 Prism.js 样式 */
+            `);
+
+            // 初始化 Web Worker
+            this.initWorker();
+
+            // 添加新的命令：批量格式化（使用分块处理）
+            this.addCommand({
+                id: 'batch-format-markdown-chunked',
+                name: '批量格式化所有Markdown文件（分块处理）',
+                callback: () => this.batchFormatChunked()
+            });
+
+            console.log('MarkdownMaster plugin loaded successfully');
+        } catch (error) {
+            console.error('Error loading MarkdownMaster plugin:', error);
         }
-
-        this.formatHistory = new FormatHistory();
-        this.addSettingTab(new MarkdownMasterSettingTab(this.app, this));
-
-        this.addRibbonIcon("pencil", "Markdown Master", (evt) => {
-            this.showFormatOptions();
-        });
-
-        this.addCommand({
-            id: 'format-markdown',
-            name: '格式化当前Markdown文件',
-            callback: () => this.showFormatOptions()
-        });
-
-        this.addCommand({
-            id: 'undo-format',
-            name: '撤销上次格式化',
-            callback: () => this.undoFormat()
-        });
-
-        this.addCommand({
-            id: 'batch-format-markdown',
-            name: '批量格式化所有Markdown文件',
-            callback: () => this.batchFormat()
-        });
-
-        this.addCommand({
-            id: 'show-format-history',
-            name: '示格式化历史记录',
-            callback: () => this.showFormatHistory()
-        });
-
-        // 修改自动格式化功能件注册
-        if (this.settings.formatOptions.advanced.enableAutoFormat) {
-            this.fileOpenRef = this.registerEvent(
-                this.app.workspace.on('file-open', (file: TFile) => {
-                    if (file && file.extension === 'md') {
-                        this.autoFormatFile(file);
-                    }
-                })
-            );
-        }
-
-        // 添加文本统计命令
-        this.addCommand({
-            id: 'show-text-statistics',
-            name: '显示文本统计',
-            callback: () => this.showTextStatistics()
-        });
-
-        // 添加的命令：撤销所有更改
-        this.addCommand({
-            id: 'revert-all-changes',
-            name: '撤销有格���更改',
-            callback: () => this.revertAllChanges()
-        });
-
-        // 添加新的命令：预览格式化效果
-        this.addCommand({
-            id: 'preview-format',
-            name: '预览格式化效果',
-            callback: () => this.previewFormat()
-        });
-
-        // 添加新的命令
-        this.addCommand({
-            id: 'check-markdown-syntax',
-            name: '检查Markdown语法',
-            callback: () => this.checkMarkdownSyntax()
-        });
-
-        // 添加自定义 CSS
-        this.addStyle(`
-            .markdown-master-preview-container {
-                max-height: 60vh;
-                overflow-y: auto;
-                border: 1px solid var(--background-modifier-border);
-                padding: 10px;
-                margin-bottom: 20px;
-            }
-            .markdown-master-diff-preview pre {
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            }
-            .markdown-master-diff-added {
-                background-color: #e6ffed;
-                color: #24292e;
-            }
-            .markdown-master-diff-removed {
-                background-color: #ffeef0;
-                color: #24292e;
-                text-decoration: line-through;
-            }
-            .markdown-master-regex-help {
-                margin-left: 10px;
-                text-decoration: none;
-                cursor: pointer;
-            }
-
-            .markdown-master-regex-help:hover {
-                text-decoration: underline;
-            }
-
-            .regex-test-output {
-                margin-top: 20px;
-                padding: 10px;
-                border: 1px solid var(--background-modifier-border);
-                border-radius: 5px;
-            }
-
-            .regex-test-output pre {
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            }
-
-            .markdown-master-nested-settings {
-                margin-left: 20px;
-                border-left: 2px solid var(--background-modifier-border);
-                padding-left: 20px;
-            }
-
-            .markdown-master-regex-rule {
-                margin-bottom: 20px;
-                padding: 10px;
-                border: 1px solid var(--background-modifier-border);
-                border-radius: 5px;
-            }
-
-            .markdown-master-regex-rule .setting-item {
-                border-top: none;
-                padding-top: 0;
-            }
-
-            .markdown-master-regex-buttons {
-                display: flex;
-                justify-content: flex-end;
-                margin-top: 10px;
-            }
-
-            .markdown-master-regex-buttons button {
-                margin-left: 10px;
-            }
-
-            .markdown-lint-gutter-marker {
-                color: orange;
-                font-size: 18px;
-                cursor: pointer;
-            }
-
-            .markdown-lint-underline {
-                text-decoration: wavy underline orange;
-            }
-
-            /* 在这里添加 Prism.js 的基本样式 */
-            code[class*="language-"],
-            pre[class*="language-"] {
-                color: #000;
-                background: none;
-                text-shadow: 0 1px white;
-                font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-                font-size: 1em;
-                text-align: left;
-                white-space: pre;
-                word-spacing: normal;
-                word-break: normal;
-                word-wrap: normal;
-                line-height: 1.5;
-                -moz-tab-size: 4;
-                -o-tab-size: 4;
-                tab-size: 4;
-                -webkit-hyphens: none;
-                -moz-hyphens: none;
-                -ms-hyphens: none;
-                hyphens: none;
-            }
-            /* 添加多必要的 Prism.js 样式 */
-        `);
-
-        // 初始化 Web Worker
-        this.initWorker();
-
-        // 添加新的命令：批量格式化（使用分块处理）
-        this.addCommand({
-            id: 'batch-format-markdown-chunked',
-            name: '批量格式化所有Markdown文件（分块处理）',
-            callback: () => this.batchFormatChunked()
-        });
     }
 
     onunload() {
@@ -382,7 +420,16 @@ export default class MarkdownMasterPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const loadedData = await this.loadData();
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+
+        // 根据 applyId 应用正确的函数
+        this.settings.formatRules = this.settings.formatRules.map(rule => ({
+            ...rule,
+            apply: rule.applyId && ruleFunctions[rule.applyId] 
+                ? ruleFunctions[rule.applyId] 
+                : (rule.apply || ((content: string) => content))
+        }));
 
         // 确保 regexReplacements 数组存在
         if (!this.settings.formatOptions.content.regexReplacements) {
@@ -410,7 +457,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                     // 在这里实现格式化逻辑
                     let formatted = content;
                     // 应用各种格式化规则...
-                    // 注意：这里应该包含与 formatMarkdownDirectly 方法相同逻辑
+                    // 注���：这应该包���与 formatMarkdownDirectly 方法相同逻辑
                     self.postMessage(formatted);
                 };
             `;
@@ -444,7 +491,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         });
     }
 
-    // 分块处理大文件
+    // 分块理大文件
     async formatLargeFile(file: TFile) {
         const chunkSize = 1024 * 1024; // 1MB
         let offset = 0;
@@ -479,15 +526,10 @@ export default class MarkdownMasterPlugin extends Plugin {
         new Notice('批量格式化完成');
     }
 
-    // 添加这个新方法
-    addStatusBarItem(): HTMLElement {
-        return this.addStatusBarItem();
-    }
-
     // 更进
     private updateProgress(current: number, total: number) {
         const percent = Math.round((current / total) * 100);
-        const statusBarItem = this.addStatusBarItem();
+        const statusBarItem = (this as any).addStatusBarItem();
         statusBarItem.textContent = `格式化进度: ${percent}%`;
         if (percent === 100) {
             setTimeout(() => statusBarItem.remove(), 2000);
@@ -520,7 +562,17 @@ export default class MarkdownMasterPlugin extends Plugin {
 
         // 应用每个启用的规则
         for (const rule of sortedRules) {
-            formatted = rule.apply(formatted);
+            if (typeof rule.apply === 'function') {
+                try {
+                    formatted = rule.apply(formatted);
+                } catch (error) {
+                    console.error(`Error applying rule ${rule.id}:`, error);
+                    // 可以选择在这里显示一知给用户
+                    new Notice(`格式化规则 "${rule.name}" 应用失败`);
+                }
+            } else {
+                console.warn(`Rule ${rule.id} does not have a valid apply function. Skipping.`);
+            }
         }
 
         return formatted;
@@ -598,7 +650,7 @@ export default class MarkdownMasterPlugin extends Plugin {
             });
         } catch (error) {
             console.error('Prettier formatting error:', error);
-            return code; // 如果格式化失败，返回原始代码
+            return code; // 如果格化失败，返回原始代码
         }
     }
 
@@ -879,7 +931,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         }
     }
 
-    // 新增方法：撤销所有更改
+    // 新方法：撤销有更改
     async revertAllChanges() {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (activeView) {
@@ -888,7 +940,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                 editor.setValue(this.originalContent);
                 new Notice('已恢复到原始状态');
             } else {
-                new Notice('没有可恢复的原始内容');
+                new Notice('没有可复的原始内');
             }
         }
     }
@@ -1105,6 +1157,10 @@ export default class MarkdownMasterPlugin extends Plugin {
                 .join('\n');
             return `---\n${formattedYaml}\n---`;
         });
+    }
+
+    addStatusBarItem(): HTMLElement {
+        return this.addStatusBarItem();
     }
 }
 
@@ -1376,7 +1432,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 .addButton(button => button
                     .setButtonText('添加新规则')
                     .onClick(() => {
-                        console.log("点击添加新规则按钮");
+                        console.log("点击添加新规则钮");
                         this.addNewRegexRule();
                     }));
 
@@ -1694,7 +1750,7 @@ class RegexHelpModal extends Modal {
 
         const content = contentEl.createEl('div');
         
-        content.createEl('p', { text: '正则表达式是一种强大的文本匹配和操作工具。以是一些基本语法：' });
+        content.createEl('p', { text: '正则表达式是一种强大的文本匹配和操作工具。以是一基本语法：' });
         const ul1 = content.createEl('ul');
         [
             { code: '.', desc: '匹配任意单个字符' },
