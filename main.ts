@@ -365,6 +365,7 @@ export default class MarkdownMasterPlugin extends Plugin {
     // 初始化 Web Worker
     private initWorker() {
         if (typeof Worker !== 'undefined') {
+            // 使用 Blob URL 创建 Web Worker
             const workerCode = `
                 self.onmessage = async (event) => {
                     const { content, settings } = event.data;
@@ -378,6 +379,14 @@ export default class MarkdownMasterPlugin extends Plugin {
             const blob = new Blob([workerCode], { type: 'application/javascript' });
             const workerUrl = URL.createObjectURL(blob);
             this.worker = new Worker(workerUrl);
+            
+            this.worker.onmessage = (event: MessageEvent) => {
+                // 处理来自 Worker 的消息
+                console.log('Received from worker:', event.data);
+            };
+            this.worker.onerror = (error) => {
+                console.error('Worker error:', error);
+            };
         }
     }
 
@@ -465,7 +474,14 @@ export default class MarkdownMasterPlugin extends Plugin {
     // 异步处理格式化
     async formatMarkdown(content: string): Promise<string> {
         if (content.length > 10000 && this.worker) {
-            return this.formatWithWebWorker(content);
+            return new Promise((resolve, reject) => {
+                const messageHandler = (event: MessageEvent) => {
+                    this.worker!.removeEventListener('message', messageHandler);
+                    resolve(event.data);
+                };
+                this.worker!.addEventListener('message', messageHandler);
+                this.worker!.postMessage({ content, settings: this.settings });
+            });
         } else {
             return this.formatMarkdownDirectly(content);
         }
