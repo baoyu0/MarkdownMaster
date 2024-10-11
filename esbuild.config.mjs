@@ -11,7 +11,7 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
-const buildOptions = {
+const context = await esbuild.context({
     banner: {
         js: banner,
     },
@@ -38,36 +38,11 @@ const buildOptions = {
     sourcemap: prod ? false : "inline",
     treeShaking: true,
     outfile: "main.js",
-    plugins: [
-        {
-            name: 'obsidian-plugin',
-            setup(build) {
-                build.onResolve({ filter: /^obsidian$/ }, args => {
-                    return { path: args.path, external: true };
-                });
-            },
-        },
-        {
-            name: 'node-modules-polyfill',
-            setup(build) {
-                build.onResolve({ filter: /^prettier/ }, args => {
-                    return { path: args.path, external: true };
-                });
-            },
-        },
-    ],
-};
+});
 
 if (prod) {
-    esbuild.build(buildOptions).catch(() => process.exit(1));
+    await context.rebuild();
+    process.exit(0);
 } else {
-    esbuild.build({
-        ...buildOptions,
-        watch: {
-            onRebuild(error, result) {
-                if (error) console.error('watch build failed:', error)
-                else console.log('watch build succeeded:', result)
-            },
-        },
-    }).catch(() => process.exit(1));
+    await context.watch();
 }

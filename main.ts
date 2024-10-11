@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, HTMLElement as ObsidianHTMLElement } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, HTMLElement as ObsidianHTMLElement, ToggleComponent, TextAreaComponent } from 'obsidian';
 import { diffChars, Change } from 'diff';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
@@ -14,6 +14,14 @@ import parserHtml from 'prettier/parser-html';
 import parserMarkdown from 'prettier/parser-markdown';
 // 根据需要添加更多语言
 
+interface FormatRule {
+    id: string;
+    name: string;
+    enabled: boolean;
+    priority: number;
+    apply: (content: string) => string;
+}
+
 interface MarkdownMasterSettings {
     formatOptions: {
         content: FormatContentOptions;
@@ -24,6 +32,7 @@ interface MarkdownMasterSettings {
     formatYAMLFrontMatter: boolean;
     formatMathEquations: boolean;
     formatCustomCSSClasses: boolean;
+    formatRules: FormatRule[];
 }
 
 interface FormatContentOptions {
@@ -99,6 +108,29 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
     formatYAMLFrontMatter: true,
     formatMathEquations: true,
     formatCustomCSSClasses: true,
+    formatRules: [
+        {
+            id: 'headings',
+            name: '标题格式化',
+            enabled: true,
+            priority: 100,
+            apply: (content: string) => {
+                // 实现标题格式化逻辑
+                return content;
+            }
+        },
+        {
+            id: 'lists',
+            name: '列表格式化',
+            enabled: true,
+            priority: 90,
+            apply: (content: string) => {
+                // 实现列表格式化逻辑
+                return content;
+            }
+        },
+        // ... 添加更多格式化规则 ...
+    ]
 };
 
 const REGEX_PRESETS = [
@@ -124,7 +156,7 @@ const REGEX_PRESETS = [
         name: '删除行尾空格',
         regex: '[ \t]+$',
         replacement: '',
-        description: '删除每行末尾的空格和制表符'
+        description: '删除每行末尾的空格制表符'
     },
     {
         name: 'URL链',
@@ -204,10 +236,10 @@ export default class MarkdownMasterPlugin extends Plugin {
             callback: () => this.showTextStatistics()
         });
 
-        // 添加新的命令：撤销所有更改
+        // 添加的命令：撤销所有更改
         this.addCommand({
             id: 'revert-all-changes',
-            name: '撤销所有格式化更改',
+            name: '撤销有格���更改',
             callback: () => this.revertAllChanges()
         });
 
@@ -329,7 +361,7 @@ export default class MarkdownMasterPlugin extends Plugin {
                 -ms-hyphens: none;
                 hyphens: none;
             }
-            /* 添加更多必要的 Prism.js 样式 */
+            /* 添加多必要的 Prism.js 样式 */
         `);
 
         // 初始化 Web Worker
@@ -452,7 +484,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         return this.addStatusBarItem();
     }
 
-    // 更新进度
+    // 更进
     private updateProgress(current: number, total: number) {
         const percent = Math.round((current / total) * 100);
         const statusBarItem = this.addStatusBarItem();
@@ -479,24 +511,25 @@ export default class MarkdownMasterPlugin extends Plugin {
 
     // 异步处理格式化
     async formatMarkdown(content: string): Promise<string> {
-        if (content.length > 10000 && this.worker) {
-            return new Promise((resolve, reject) => {
-                const messageHandler = (event: MessageEvent) => {
-                    this.worker!.removeEventListener('message', messageHandler);
-                    resolve(event.data);
-                };
-                this.worker!.addEventListener('message', messageHandler);
-                this.worker!.postMessage({ content, settings: this.settings });
-            });
-        } else {
-            return this.formatMarkdownDirectly(content);
+        let formatted = content;
+        
+        // 按优先级排序规则
+        const sortedRules = this.settings.formatRules
+            .filter(rule => rule.enabled)
+            .sort((a, b) => b.priority - a.priority);
+
+        // 应用每个启用的规则
+        for (const rule of sortedRules) {
+            formatted = rule.apply(formatted);
         }
+
+        return formatted;
     }
 
     private async formatMarkdownDirectly(content: string): Promise<string> {
         let formatted = content;
         
-        // YAML 前置元数据格式化
+        // YAML 前置元据格式化
         formatted = this.formatYAMLFrontMatter(formatted);
         
         // 数学公式格式化
@@ -1238,6 +1271,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         this.addContentFormatSettings(containerEl);
         this.addStyleFormatSettings(containerEl);
         this.addAdvancedFormatSettings(containerEl);
+        this.addFormatRulesPrioritySettings(containerEl);
     }
 
     addStructureFormatSettings(containerEl: ObsidianHTMLElement) {
@@ -1560,7 +1594,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('���学公式格式化')
+            .setName('公式格式化')
             .setDesc('格式化LaTeX数学公式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableMathFormat)
@@ -1618,6 +1652,32 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                     this.plugin.settings.formatCustomCSSClasses = value;
                     await this.plugin.saveSettings();
                 }));
+    }
+
+    addFormatRulesPrioritySettings(containerEl: ObsidianHTMLElement) {
+        containerEl.createEl('h3', { text: '格式化规则优先级' });
+
+        this.plugin.settings.formatRules.forEach((rule, index) => {
+            new Setting(containerEl)
+                .setName(rule.name)
+                .setDesc(`优先级: ${rule.priority}`)
+                .addTextArea((text: TextAreaComponent) => text
+                    .setPlaceholder('输入优先级 (0-100)')
+                    .setValue(rule.priority.toString())
+                    .onChange(async (value: string) => {
+                        const numValue = Number(value);
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                            this.plugin.settings.formatRules[index].priority = numValue;
+                            await this.plugin.saveSettings();
+                        }
+                    }))
+                .addToggle((toggle: ToggleComponent) => toggle
+                    .setValue(rule.enabled)
+                    .onChange(async (value: boolean) => {
+                        this.plugin.settings.formatRules[index].enabled = value;
+                        await this.plugin.saveSettings();
+                    }));
+        });
     }
 }
 
