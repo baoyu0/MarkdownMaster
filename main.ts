@@ -36,7 +36,9 @@ interface FormatAdvancedOptions {
     enableAutoFormat: boolean;
     enableCodeHighlight: boolean;
     enableImageOptimization: boolean;
-    // ... 其他高级选项 ...
+    enableYamlMetadataFormat: boolean;
+    enableMathFormat: boolean;
+    enableCustomCssClassFormat: boolean;
 }
 
 const DEFAULT_SETTINGS: MarkdownMasterSettings = {
@@ -71,6 +73,9 @@ const DEFAULT_SETTINGS: MarkdownMasterSettings = {
             enableAutoFormat: false,
             enableCodeHighlight: true,
             enableImageOptimization: true,
+            enableYamlMetadataFormat: false,
+            enableMathFormat: false,
+            enableCustomCssClassFormat: false,
         },
     },
 };
@@ -323,6 +328,18 @@ export default class MarkdownMasterPlugin extends Plugin {
             formatted = this.optimizeImageLinks(formatted);
         }
 
+        if (formatOptions.advanced.enableYamlMetadataFormat) {
+            formatted = this.formatYamlMetadata(formatted);
+        }
+
+        if (formatOptions.advanced.enableMathFormat) {
+            formatted = this.formatMathEquations(formatted);
+        }
+
+        if (formatOptions.advanced.enableCustomCssClassFormat) {
+            formatted = this.formatCustomCssClasses(formatted);
+        }
+
         this.showNotice(`格式化完成，共进行了 ${replacementCount} 次替换`);
         return formatted.trim();
     }
@@ -446,7 +463,7 @@ export default class MarkdownMasterPlugin extends Plugin {
         new TextStatisticsModal(this.app, wordCount, charCount, lineCount).open();
     }
 
-    // 在类添加这个辅助方法
+    // 在类添加个辅助方法
     private addStyle(cssString: string) {
         const css = document.createElement('style');
         css.id = 'markdown-master-styles';
@@ -468,6 +485,49 @@ export default class MarkdownMasterPlugin extends Plugin {
     private formatBlockquotes(content: string): string {
         // 实现引用块格式化逻辑
         return content.replace(/^>\s*/gm, '> ');
+    }
+
+    private formatYamlMetadata(content: string): string {
+        // 实现YAML前置元数据格式化逻辑
+        // 这里只是一个简单的示例,实际实现可能需要更复杂的逻辑
+        const yamlRegex = /^---\n([\s\S]*?)\n---/;
+        return content.replace(yamlRegex, (match, yaml) => {
+            const formattedYaml = yaml.split('\n').map((line: string) => line.trim()).join('\n');
+            return `---\n${formattedYaml}\n---`;
+        });
+    }
+
+    private formatMathEquations(content: string): string {
+        // 实现数学公式格式化逻辑
+        // 这里只是一个简单的示例,实际实现可能需要更复杂的逻辑
+        return content.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
+            const formattedMath = math.trim().replace(/\s+/g, ' ');
+            return `$$\n${formattedMath}\n$$`;
+        });
+    }
+
+    private formatCustomCssClasses(content: string): string {
+        // 实现自定义CSS类格式化逻辑
+        // 这里只是一个简单的示例,实际实现可能需要更复杂的逻辑
+        return content.replace(/\{([^}]+)\}/g, (match, classes) => {
+            const formattedClasses = classes.split(' ').filter(Boolean).join(' ');
+            return `{${formattedClasses}}`;
+        });
+    }
+
+    toggleAutoFormat(enable: boolean) {
+        if (enable) {
+            this.fileOpenRef = this.registerEvent(
+                this.app.workspace.on('file-open', (file: TFile) => {
+                    if (file && file.extension === 'md') {
+                        this.autoFormatFile(file);
+                    }
+                })
+            );
+        } else if (this.fileOpenRef) {
+            this.fileOpenRef.unregister();
+            this.fileOpenRef = null;
+        }
     }
 }
 
@@ -867,7 +927,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用链接格式化')
+            .setName('启用链接式化')
             .setDesc('统一链接的格式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.style.enableLinkFormat)
@@ -877,7 +937,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用引用块格式化')
+            .setName('启引用块格式化')
             .setDesc('统一引用块的格式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.style.enableBlockquoteFormat)
@@ -888,7 +948,69 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
     }
 
     addAdvancedFormatSettings(containerEl: ObsidianHTMLElement) {
-        // 实现高级格式化设置
+        containerEl.createEl('h3', { text: '高级格式化选项' });
+
+        new Setting(containerEl)
+            .setName('启用自动格式化')
+            .setDesc('在打开Markdown文件时自动应用格式化')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.advanced.enableAutoFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.advanced.enableAutoFormat = value;
+                    await this.plugin.saveSettings();
+                    // 重新注册或取消自动格式化事件
+                    this.plugin.toggleAutoFormat(value);
+                }));
+
+        new Setting(containerEl)
+            .setName('启用代码块高亮')
+            .setDesc('优化代码块的格式和高亮')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.advanced.enableCodeHighlight)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.advanced.enableCodeHighlight = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用图片链接优化')
+            .setDesc('优化图片链接，如将http转换为https')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.advanced.enableImageOptimization)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.advanced.enableImageOptimization = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用YAML前置元数据格式化')
+            .setDesc('格式化Markdown文件开头的YAML前置元数据')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.advanced.enableYamlMetadataFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.advanced.enableYamlMetadataFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用数学公式格式化')
+            .setDesc('格式化LaTeX数学公式')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.advanced.enableMathFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.advanced.enableMathFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('启用自定义CSS类格式化')
+            .setDesc('格式化自定义CSS类标记')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.formatOptions.advanced.enableCustomCssClassFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.formatOptions.advanced.enableCustomCssClassFormat = value;
+                    await this.plugin.saveSettings();
+                }));
     }
 }
 
@@ -905,7 +1027,7 @@ class RegexHelpModal extends Modal {
 
         const content = contentEl.createEl('div');
         
-        content.createEl('p', { text: '正则表达式是一种强大的文本匹配和操作工具。以下是一些基本语法：' });
+        content.createEl('p', { text: '正则表达式是一种强大的文本匹配和操作工具。以是一些基本语法：' });
         const ul1 = content.createEl('ul');
         [
             { code: '.', desc: '匹配任意单个字符' },
