@@ -424,6 +424,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
     }
 
     async loadSettings() {
+        console.log("Loading settings");
         const loadedData = await this.loadData();
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 
@@ -444,6 +445,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
     }
 
     async saveSettings() {
+        console.log("Saving settings");
         await this.saveData(this.settings);
     }
 
@@ -458,7 +460,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
             const workerCode = `
                 self.onmessage = async (event) => {
                     const { content, settings } = event.data;
-                    // 在这里现格式化逻
+                    // 在这里式化逻
                     let formatted = content;
                     // 应用各种格式化规则...
                     // 注：这应与 formatMarkdownDirectly 方法相同逻辑
@@ -557,6 +559,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
 
     // 异步处理格式化
     async formatMarkdown(content: string): Promise<string> {
+        console.log("Starting formatMarkdown");
         let formatted = content;
         
         // 按优先级排序规则
@@ -566,6 +569,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
 
         // 应用每个启用的规则
         for (const rule of sortedRules) {
+            console.log(`Applying rule: ${rule.name}`);
             if (typeof rule.apply === 'function') {
                 try {
                     formatted = rule.apply(formatted);
@@ -579,6 +583,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
             }
         }
 
+        console.log("Finished formatMarkdown");
         return formatted;
     }
 
@@ -1182,6 +1187,7 @@ class FormatPreviewModal extends Modal {
     }
 
     onOpen() {
+        console.log("Opening FormatPreviewModal");
         const { contentEl } = this;
         contentEl.empty();
         contentEl.createEl('h2', { text: '预览格式化结果' });
@@ -1670,7 +1676,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('公式格式化')
+            .setName('式格式化')
             .setDesc('格式化LaTeX数学公式')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableMathFormat)
@@ -1680,7 +1686,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用自定义CSS类格式��')
+            .setName('启用自定义CSS类格式')
             .setDesc('格式化自定义CSS类标记')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableCustomCssClassFormat)
