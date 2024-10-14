@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, HTMLElement as ObsidianHTMLElement, ToggleComponent, TextAreaComponent } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Modal, TFile, EventRef, ToggleComponent, TextAreaComponent } from 'obsidian';
 import { diffChars, Change } from 'diff';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
@@ -177,7 +177,11 @@ const REGEX_PRESETS = [
     }
 ];
 
-// 在文件顶部添加这个接口
+// 在文件开头添加这个类型声明
+import { Workspace } from 'obsidian';
+type WorkspaceEvents = keyof typeof Workspace.prototype.on;
+
+// 定义 ExtendedPlugin 接口
 interface ExtendedPlugin extends Plugin {
     addStatusBarItem(): HTMLElement;
 }
@@ -186,7 +190,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
     settings!: MarkdownMasterSettings;
     private lastContent: string = "";
     private formatHistory!: FormatHistory;
-    private fileOpenRef: EventRef;
+    private fileOpenRef: EventRef | null = null;
     private originalContent: string = ""; // 新增：存储原始内容
     private markdownLintErrors: Array<{ line: number; message: string }> = [];
     private cache: Map<string, string> = new Map();
@@ -229,7 +233,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
 
             this.addCommand({
                 id: 'format-markdown',
-                name: '格式化当前Markdown文件',
+                name: '格式化当Markdown文件',
                 callback: () => this.showFormatOptions()
             });
 
@@ -254,12 +258,12 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
             // 修改自动格式化功能件注册
             if (this.settings.formatOptions.advanced.enableAutoFormat) {
                 this.fileOpenRef = this.registerEvent(
-                    this.app.workspace.on('file-open', (file: TFile) => {
+                    this.app.workspace.on('file-open' as WorkspaceEvents, (file: TFile) => {
                         if (file && file.extension === 'md') {
                             this.autoFormatFile(file);
                         }
                     })
-                );
+                ) as unknown as EventRef;
             }
 
             // 添加文本统计命令
@@ -454,10 +458,10 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
             const workerCode = `
                 self.onmessage = async (event) => {
                     const { content, settings } = event.data;
-                    // 在这里实现格式化逻辑
+                    // 在这里现格式化逻
                     let formatted = content;
                     // 应用各种格式化规则...
-                    // 注���：这应该包���与 formatMarkdownDirectly 方法相同逻辑
+                    // 注：这应与 formatMarkdownDirectly 方法相同逻辑
                     self.postMessage(formatted);
                 };
             `;
@@ -606,7 +610,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
     private async processCodeBlocks(content: string): Promise<string> {
         const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
         
-        const promises = [];
+        const promises: Promise<string>[] = [];
         let lastIndex = 0;
         let match;
 
@@ -710,7 +714,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
             this.lastContent = '';
             new Notice('已撤销上次格式化');
         } else {
-            new Notice('没有可撤销的格式化操作');
+            new Notice('没有可撤销式操作');
         }
     }
 
@@ -804,7 +808,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
         const formattedContent = await this.formatMarkdown(content);
         if (content !== formattedContent) {
             await this.app.vault.modify(file, formattedContent);
-            new Notice(`已自动格文件: ${file.name}`);
+            new Notice(`已自动格式化文件: ${file.name}`);
         }
     }
 
@@ -919,14 +923,14 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
     toggleAutoFormat(enable: boolean) {
         if (enable) {
             this.fileOpenRef = this.registerEvent(
-                this.app.workspace.on('file-open', (file: TFile) => {
+                this.app.workspace.on('file-open' as WorkspaceEvents, (file: TFile) => {
                     if (file && file.extension === 'md') {
                         this.autoFormatFile(file);
                     }
                 })
-            );
+            ) as unknown as EventRef;
         } else if (this.fileOpenRef) {
-            this.fileOpenRef.unregister();
+            this.app.workspace.offref(this.fileOpenRef);
             this.fileOpenRef = null;
         }
     }
@@ -1008,15 +1012,15 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
 
             // 检查重复的标点符号
             if (/[，。！？]{2,}/.test(line)) {
-                this.markdownLintErrors.push({ line: index + 1, message: '存在重复的标点符号' });
+                this.markdownLintErrors.push({ line: index + 1, message: '存在复的标点符号' });
             }
 
-            // 检查空白行后的缩进
+            // 检查空白后的
             if (index > 0 && lines[index - 1].trim() === '' && line.startsWith(' ')) {
                 this.markdownLintErrors.push({ line: index + 1, message: '空白行后不应有缩进' });
             }
 
-            // 查代码块的语言标记
+            // 查代码块的语标记
             if (line.startsWith('```') && line.trim().length > 3) {
                 const language = line.trim().slice(3);
                 const validLanguages = ['js', 'javascript', 'ts', 'typescript', 'python', 'java', 'c', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'scala', 'html', 'css', 'sql', 'bash', 'shell', 'powershell', 'yaml', 'json', 'xml', 'markdown', 'plaintext'];
@@ -1064,7 +1068,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
                 const gutterMarker = this.createGutterMarker(error.message);
                 this.addGutterMarker(editor, lineNumber, "markdown-lint-gutter", gutterMarker);
 
-                // 添加下划线
+                // 加下划线
                 const from = { line: lineNumber, ch: 0 };
                 const to = { line: lineNumber, ch: lineContent.length };
                 this.addUnderline(editor, from, to, 'markdown-lint-underline');
@@ -1123,7 +1127,7 @@ export default class MarkdownMasterPlugin extends Plugin implements ExtendedPlug
 
             // 添加图片尺寸属性（如果没有的话）
             if (!src.includes('|')) {
-                src += '|500x';  // 默认最大宽度为500像素
+                src += '|500x';  // 默认最大度为500像素
             }
 
             // 添加懒加载属性
@@ -1183,11 +1187,12 @@ class FormatPreviewModal extends Modal {
         contentEl.createEl('h2', { text: '预览格式化结果' });
 
         const previewContainer = contentEl.createEl('div', { cls: 'markdown-master-preview-container' });
-        const diffPreview = previewContainer.createEl('div', { cls: 'markdown-master-diff-preview' });
+        
+        // 添加原始内容和格式化后内容的对比
+        this.createComparisonView(previewContainer);
 
-        diffPreview.createEl('h3', { text: '对比视图' });
-
-        this.createDiffView(diffPreview);
+        // 添加差异视图
+        this.createDiffView(previewContainer);
 
         new Setting(contentEl)
             .addButton(btn => btn
@@ -1211,18 +1216,33 @@ class FormatPreviewModal extends Modal {
         this.onSubmit(this.result);
     }
 
-    private createDiffView(container: ObsidianHTMLElement) {
+    private createComparisonView(container: HTMLElement) {
+        const comparisonDiv = container.createEl('div', { cls: 'markdown-master-comparison' });
+        
+        const originalDiv = comparisonDiv.createEl('div', { cls: 'markdown-master-original' });
+        originalDiv.createEl('h3', { text: '原始内容' });
+        originalDiv.createEl('pre').createEl('code', { text: this.originalContent });
+
+        const formattedDiv = comparisonDiv.createEl('div', { cls: 'markdown-master-formatted' });
+        formattedDiv.createEl('h3', { text: '格式化后内容' });
+        formattedDiv.createEl('pre').createEl('code', { text: this.formattedContent });
+    }
+
+    private createDiffView(container: HTMLElement) {
+        const diffDiv = container.createEl('div', { cls: 'markdown-master-diff' });
+        diffDiv.createEl('h3', { text: '差异对比' });
+        const diffPre = diffDiv.createEl('pre');
+        const diffCode = diffPre.createEl('code');
+
         const diff = diffChars(this.originalContent, this.formattedContent);
-        const pre = container.createEl('pre');
-        const code = pre.createEl('code');
 
         diff.forEach((part: Change) => {
-            const span = code.createEl('span');
+            const span = diffCode.createEl('span');
             span.textContent = part.value;
             if (part.added) {
-                (span as any).addClass('markdown-master-diff-added');
+                span.classList.add('markdown-master-diff-added');
             } else if (part.removed) {
-                (span as any).addClass('markdown-master-diff-removed');
+                span.classList.add('markdown-master-diff-removed');
             }
         });
     }
@@ -1330,7 +1350,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         this.addFormatRulesPrioritySettings(containerEl);
     }
 
-    addStructureFormatSettings(containerEl: ObsidianHTMLElement) {
+    addStructureFormatSettings(containerEl: HTMLElement) {
         containerEl.createEl('h3', { text: '结构格式化选项' });
         
         new Setting(containerEl)
@@ -1389,7 +1409,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         }
     }
 
-    addContentFormatSettings(containerEl: ObsidianHTMLElement) {
+    addContentFormatSettings(containerEl: HTMLElement) {
         console.log("开始添加内容格式化设置");
         const titleEl = containerEl.createEl('h3', { text: '正则表达式替换 ' });
         
@@ -1466,7 +1486,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
         this.display(); // 重新渲染整个设置页面
     }
 
-    private createRegexRuleSetting(container: ObsidianHTMLElement, regexObj: { regex: string; replacement: string; description: string; enabled: boolean }, index: number) {
+    private createRegexRuleSetting(container: HTMLElement, regexObj: { regex: string; replacement: string; description: string; enabled: boolean }, index: number) {
         console.log("创建规则设置:", index);
         const ruleContainer = container.createEl('div', { cls: 'markdown-master-regex-rule' });
 
@@ -1490,7 +1510,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(ruleContainer)
-            .setName('替换内容')
+            .setName('替换容')
             .addTextArea(text => text
                 .setPlaceholder('输入替换内容')
                 .setValue(regexObj.replacement)
@@ -1550,7 +1570,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
     }
 
-    addStyleFormatSettings(containerEl: ObsidianHTMLElement) {
+    addStyleFormatSettings(containerEl: HTMLElement) {
         containerEl.createEl('h3', { text: '样式格式化选项' });
 
         new Setting(containerEl)
@@ -1604,7 +1624,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
     }
 
-    addAdvancedFormatSettings(containerEl: ObsidianHTMLElement) {
+    addAdvancedFormatSettings(containerEl: HTMLElement) {
         containerEl.createEl('h3', { text: '高级格式化选项' });
 
         new Setting(containerEl)
@@ -1660,7 +1680,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('启用自定义CSS类格式化')
+            .setName('启用自定义CSS类格式��')
             .setDesc('格式化自定义CSS类标记')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.formatOptions.advanced.enableCustomCssClassFormat)
@@ -1710,7 +1730,7 @@ class MarkdownMasterSettingTab extends PluginSettingTab {
                 }));
     }
 
-    addFormatRulesPrioritySettings(containerEl: ObsidianHTMLElement) {
+    addFormatRulesPrioritySettings(containerEl: HTMLElement) {
         containerEl.createEl('h3', { text: '格式化规则优先级' });
 
         this.plugin.settings.formatRules.forEach((rule, index) => {
@@ -1798,7 +1818,7 @@ class RegexTestModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: '正则表达式测试' });
+        contentEl.createEl('h2', { text: '正则表达式测' });
 
         new Setting(contentEl)
             .setName('测试文本')
@@ -1815,7 +1835,8 @@ class RegexTestModal extends Modal {
         new Setting(contentEl)
             .addButton(button => button
                 .setButtonText('关闭')
-                .onClick(() => this.close()));
+                .onClick(() => this.close())
+            );
     }
 
     updateResult() {

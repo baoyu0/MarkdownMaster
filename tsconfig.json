@@ -16,9 +16,11 @@
     "lib": [
       "DOM",
       "ES2020"
-    ]
+    ],
+    "types": ["obsidian"] // 添加 obsidian 类型定义
   },
   "include": [
-    "**/*.ts"
+    "src/**/*",
+    "global.d.ts"
   ]
 }
